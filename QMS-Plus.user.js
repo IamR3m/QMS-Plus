@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.2.1
+// @version      0.3.0
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -74,7 +74,11 @@ var cssCode = [
     'body.move-search .logo-in-qms .nav-right > .btn { margin-left: 6px; margin-right: 3px; }',
     'body.move-search .logo-in-qms .nav-right { padding-left: 0; }',
     'body.move-search .logo-in-qms .nav-left { padding-right: 10px; }',
-    'body.move-search #body { padding-top: 0 !important; }'
+    'body.move-search #body { padding-top: 0 !important; }',
+    // Расширяемая форма ввода
+    'div#threads-bottom-form::after, div#thread-bottom-form::after, div#create-thread-div-form::after { content: "‾‾‾"; background-color: #555; position: absolute; top: 0; width: 100%; height: 8px; text-align: center; cursor: ns-resize; }',
+    'div.form-thread[data-form="send-message"], div.form-thread[data-form="create-thread"], form.form-thread { display:flex; flex-direction: column; height: 100% }',
+    '#threads-form [name="message"], #thread-form [name="message"], .form-thread [name="message"] { height: 100% }',
 ].join('\n');
 GM_addStyle(cssCode);
 
@@ -158,6 +162,9 @@ var settingsHtml = '' +
     optionHtml('move-search', 'Вынести поиск в панель', options['move-search']) +
     '</ul>' +
     '</div>';
+const BORDER_SIZE = 8;
+let m_pos, threadsList, bottomForm;
+
 
 /*
  * До document.ready
@@ -243,6 +250,11 @@ $(function() {
         setBackEvent();
     });
     setThreadsEvent();
+
+    //Изменение размера панели отправки сообщения
+
+    addBottomFormListener();
+    document.addEventListener("mouseup", mouseUp, false);
 });
 
 function setThreadsEvent() {
@@ -267,7 +279,34 @@ async function expandBBCodes() {
             if (panel && panel.attr('class') && !panel.attr('class').includes('show')) {
                 $('#btn-bb-codes').click()
             }
+            addBottomFormListener();
             resolve();
         }, 300)
     })
+}
+
+function addBottomFormListener() {
+    console.log("addBottomFormListener");
+    threadsList = document.querySelector('div.body-tbl');
+    bottomForm = document.getElementById("threads-bottom-form") || document.getElementById("thread-bottom-form") || document.getElementById("create-thread-div-form");
+
+    bottomForm.addEventListener("mousedown", mouseDown, false);
+}
+
+function resizePanel(e) {
+    const dy = m_pos - e.y;
+    m_pos = e.y;
+    threadsList.style.height = (parseInt(getComputedStyle(threadsList,'').height) - dy) + "px";
+    bottomForm.style.height = (parseInt(getComputedStyle(bottomForm,'').height) + dy) + "px"
+}
+
+function mouseDown(e) {
+    if (e.offsetY < BORDER_SIZE) {
+        m_pos = e.y;
+        document.addEventListener("mousemove", resizePanel, false)
+    }
+}
+
+function mouseUp() {
+    document.removeEventListener("mousemove", resizePanel, false)
 }
