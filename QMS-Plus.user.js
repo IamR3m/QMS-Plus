@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.3.0
+// @version      0.3.1
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -32,7 +32,7 @@
  * Стили
  */
 
-var cssCode = [
+const cssCode = [
     '.body-tbl svg { height: 100%; padding: 1%; }',
     '.header, #contacts, #body, .footer, .navbar, .navbar .nav-left, .navbar .nav, .navbar .nav-right { transition: none; }',
     // Выпадающий список
@@ -76,9 +76,11 @@ var cssCode = [
     'body.move-search .logo-in-qms .nav-left { padding-right: 10px; }',
     'body.move-search #body { padding-top: 0 !important; }',
     // Расширяемая форма ввода
-    'div#threads-bottom-form::after, div#thread-bottom-form::after, div#create-thread-div-form::after { content: "‾‾‾"; background-color: #555; position: absolute; top: 0; width: 100%; height: 8px; text-align: center; cursor: ns-resize; }',
+    'div#threads-bottom-form::after, div#thread-bottom-form::after, div#create-thread-div-form::after { content: "‾‾‾‾‾‾‾‾‾‾‾‾‾"; background-color: #e0eeff; border-bottom: #c6e0ff solid 1px; position: absolute; top: 0; width: 100%; height: 6px; font-size: 8px; text-align: center; cursor: ns-resize; }',
     'div.form-thread[data-form="send-message"], div.form-thread[data-form="create-thread"], form.form-thread { display:flex; flex-direction: column; height: 100% }',
     '#threads-form [name="message"], #thread-form [name="message"], .form-thread [name="message"] { height: 100% }',
+    'div.body-tbl { max-height: calc(100% - 200px) }',
+    'div#threads-bottom-form, div#thread-bottom-form, div#create-thread-div-form { min-height: 200px }',
 ].join('\n');
 GM_addStyle(cssCode);
 
@@ -87,7 +89,7 @@ GM_addStyle(cssCode);
  */
 
 function optionHtml(name, title, checked) {
-    var result = '<div class="chk-wrap clearfix">' +
+    let result = '<div class="chk-wrap clearfix">' +
         '<input class="checkbox chk-left" type="checkbox" name="' + name + '" value="1" id="' + name + '"';
 
     if (checked) {
@@ -99,7 +101,7 @@ function optionHtml(name, title, checked) {
 }
 
 function initSettings() {
-    var $settings = $('#qms-plus');
+    const $settings = $('#qms-plus');
 
     $settings.find('.checkbox').change(function() {
         options[this.name] = this.checked;
@@ -115,7 +117,7 @@ function initSettings() {
 }
 
 function removeNiceScroll($selector) {
-    var $scrolls = $selector.getNiceScroll();
+    const $scrolls = $selector.getNiceScroll();
 
     if ($scrolls.length) {
         $scrolls.remove();
@@ -136,7 +138,7 @@ function removeNiceScroll($selector) {
  * Глобальные переменные
  */
 
-var options = GM_getValue('options');
+let options = GM_getValue('options');
 if (!options) {
     options = {
         'hide-header': true,
@@ -147,10 +149,10 @@ if (!options) {
     GM_setValue('options', options);
 }
 
-var qmsClass = '.logo-in-qms';
+const qmsClass = '.logo-in-qms';
 
-var bgSvg = GM_getResourceText('backgroundSvg');
-var settingsHtml = '' +
+const bgSvg = GM_getResourceText('backgroundSvg');
+const settingsHtml = '' +
     '<div class="dropdown" id="qms-plus">' +
     '<a href="#" class="btn" title="Настройки QMS Plus" data-toggle="dropdown">' +
     '<i class="icon-cog"></i><span class="on-show-sidebar">QMS Plus</span><i class="icon-down-dir-1"></i>' +
@@ -162,7 +164,7 @@ var settingsHtml = '' +
     optionHtml('move-search', 'Вынести поиск в панель', options['move-search']) +
     '</ul>' +
     '</div>';
-const BORDER_SIZE = 8;
+const BORDER_SIZE = 6;
 let m_pos, threadsList, bottomForm;
 
 
@@ -203,7 +205,7 @@ $(function() {
     initSettings();
 
     // Доступ к родному jQuery форума
-    var $u = unsafeWindow.$;
+    const $u = unsafeWindow.$;
 
     if (options['smooth-disable']) {
         $('body').addClass('custom-scroll');
@@ -230,7 +232,7 @@ $(function() {
 
     // Перенос поиска в панель
     if (options['move-search']) {
-        var $searchForm = $('#qms-search-form');
+        const $searchForm = $('#qms-search-form');
         $('body').addClass('move-search');
 
         if ($searchForm.length) {
@@ -286,7 +288,6 @@ async function expandBBCodes() {
 }
 
 function addBottomFormListener() {
-    console.log("addBottomFormListener");
     threadsList = document.querySelector('div.body-tbl');
     bottomForm = document.getElementById("threads-bottom-form") || document.getElementById("thread-bottom-form") || document.getElementById("create-thread-div-form");
 
