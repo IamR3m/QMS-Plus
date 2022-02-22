@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.3.2
+// @version      0.3.3
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -165,8 +165,7 @@ const settingsHtml = '' +
     '</ul>' +
     '</div>';
 const BORDER_SIZE = 6;
-let m_pos, threadsList, bottomForm;
-
+let m_pos;
 
 /*
  * До document.ready
@@ -195,6 +194,17 @@ if (options['hide-header']) {
 // Скрытие подвала
 if (options['hide-footer']) {
     $('body').addClass('hide-footer');
+}
+
+//Развернуть панель BB-кодов
+if($('#panel-bb-codes').length) expandBBCodes();
+$(qmsClass).arrive('#panel-bb-codes', expandBBCodes);
+
+function expandBBCodes() {
+    const panel = $('#panel-bb-codes');
+    if (panel.attr('class') && !panel.attr('class').includes('show')) {
+        $('#btn-bb-codes').click()
+    }
 }
 
 /*
@@ -244,68 +254,34 @@ $(function() {
         });
     }
 
-    //Развернуть панель BB-кодов
-    expandBBCodes();
-    $('.list-group > a.list-group-item.text-overflow').on('click', async() => {
-        setTimeout(async () =>{
-            await expandBBCodes();
-            setThreadsEvent();
-            setBackEvent();
-        });
-    });
-    setThreadsEvent();
-    setBackEvent();
-
     //Изменение размера панели отправки сообщения
-
     addBottomFormListener();
     document.addEventListener("mouseup", mouseUp, false);
 });
 
-function setThreadsEvent() {
-    $('a[id^=row-thread-id-]').on('click', async() => {
-        setTimeout(async () => {
-            await expandBBCodes();
-            setBackEvent();
-        }, 300);
-    });
-}
-
-function setBackEvent() {
-    $('#navbar-title>a.btn').on('click', async() => {
-        setTimeout(async () => {
-            await expandBBCodes();
-            setThreadsEvent();
-            setBackEvent();
-        }, 300)
-    });
-}
-
-async function expandBBCodes() {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const panel = $('#panel-bb-codes');
-            if (panel && panel.attr('class') && !panel.attr('class').includes('show')) {
-                $('#btn-bb-codes').click()
-            }
-            addBottomFormListener();
-            resolve();
-        }, 300)
-    })
-}
-
 function addBottomFormListener() {
-    threadsList = document.querySelector('div.body-tbl');
-    bottomForm = document.getElementById("threads-bottom-form") || document.getElementById("thread-bottom-form") || document.getElementById("create-thread-div-form");
-
-    bottomForm.addEventListener("mousedown", mouseDown, false);
+    const bottomForms = [
+        '#threads-bottom-form',
+        '#thread-bottom-form',
+        '#create-thread-div-form'
+    ];
+    for (const bottomForm of bottomForms) {
+        if($(bottomForm).length) {
+            $(bottomForm).on("mousedown", mouseDown)
+        }
+        $(qmsClass).arrive(bottomForm, () => {
+            $(bottomForm).on("mousedown", mouseDown)
+        });
+    }
 }
 
 function resizePanel(e) {
     const dy = m_pos - e.y;
     m_pos = e.y;
-    threadsList.style.height = (parseInt(getComputedStyle(threadsList,'').height) - dy) + "px";
-    bottomForm.style.height = (parseInt(getComputedStyle(bottomForm,'').height) + dy) + "px"
+    const threadsList = $('div.body-tbl');
+    threadsList.height(threadsList.height() - dy);
+    const bottomForm = $('#threads-bottom-form, #thread-bottom-form, #create-thread-div-form');
+    bottomForm.height(bottomForm.height() + dy)
 }
 
 function mouseDown(e) {
