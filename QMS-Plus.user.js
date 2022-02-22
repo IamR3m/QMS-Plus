@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.3.1
+// @version      0.3.2
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -246,12 +246,15 @@ $(function() {
 
     //Развернуть панель BB-кодов
     expandBBCodes();
-    $('a.list-group-item.text-overflow').on('click', async() => {
-        await expandBBCodes();
-        setThreadsEvent();
-        setBackEvent();
+    $('.list-group > a.list-group-item.text-overflow').on('click', async() => {
+        setTimeout(async () =>{
+            await expandBBCodes();
+            setThreadsEvent();
+            setBackEvent();
+        });
     });
     setThreadsEvent();
+    setBackEvent();
 
     //Изменение размера панели отправки сообщения
 
@@ -261,16 +264,20 @@ $(function() {
 
 function setThreadsEvent() {
     $('a[id^=row-thread-id-]').on('click', async() => {
-        await expandBBCodes();
-        setBackEvent();
+        setTimeout(async () => {
+            await expandBBCodes();
+            setBackEvent();
+        }, 300);
     });
 }
 
 function setBackEvent() {
     $('#navbar-title>a.btn').on('click', async() => {
-        await expandBBCodes();
-        setThreadsEvent();
-        setBackEvent();
+        setTimeout(async () => {
+            await expandBBCodes();
+            setThreadsEvent();
+            setBackEvent();
+        }, 300)
     });
 }
 
