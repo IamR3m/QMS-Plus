@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.0
+// @version      0.4.1
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -23,7 +23,6 @@
 // @grant        GM_getResourceText
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // ==/UserScript==
 
@@ -198,7 +197,7 @@ if (options['hide-footer']) {
 }
 
 //Развернуть панель BB-кодов
-if ($('#panel-bb-codes').length) expandBBCodes();
+if($('#panel-bb-codes').length) expandBBCodes();
 $(qmsClass).arrive('#panel-bb-codes', expandBBCodes);
 
 function expandBBCodes() {
@@ -258,9 +257,6 @@ $(function() {
     //Изменение размера панели отправки сообщения
     addBottomFormListener();
     document.addEventListener("mouseup", mouseUp, false);
-
-    //выводить дату последнего сообщения рядом с контактом
-    contactsDate()
 });
 
 function addBottomFormListener() {
@@ -270,7 +266,7 @@ function addBottomFormListener() {
         '#create-thread-div-form'
     ];
     for (const bottomForm of bottomForms) {
-        if ($(bottomForm).length) {
+        if($(bottomForm).length) {
             $(bottomForm).on("mousedown", mouseDown)
         }
         $(qmsClass).arrive(bottomForm, () => {
@@ -297,47 +293,4 @@ function mouseDown(e) {
 
 function mouseUp() {
     document.removeEventListener("mousemove", resizePanel, false)
-}
-
-function contactsDate() {
-    const contactsList = document.querySelectorAll('#contacts .list-group a.list-group-item');
-    const links = [];
-    const linksLength = contactsList.length;
-    for (let i = 0; i < linksLength; i++) {
-        addContactDate(contactsList[i])
-    }
-}
-
-async function addContactDate(contact) {
-    const contactDate = await getContactDate(contact.href);
-    if (contactDate) {
-        contact.appendChild(document.createElement('br'));
-        const span = document.createElement('span');
-        span.setAttribute('style', 'padding-left: 48px; font-size: 8pt; font-style: italic');
-        span.innerText = contactDate;
-        contact.appendChild(span)
-    }
-}
-
-function getContactDate(link) {
-    return new Promise(resolve => {
-        if (link.endsWith("mid=0")) return resolve();
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', link, true);
-        xhr.onload = function() {
-            if (this.readyState === 4 && this.status === 200) {
-                const response = xhr.responseText;
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(response, 'text/html');
-                const text = doc.querySelector('#threads-form a.list-group-item div.bage.fixed.right').innerText;
-                console.log(text);
-                resolve(text)
-            }
-        }
-        xhr.onerror = (e) => {
-            console.error(e)
-            resolve()
-        }
-        xhr.send();
-    })
 }
