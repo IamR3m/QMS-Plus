@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.1
+// @version      0.4.4
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -77,10 +77,24 @@ const cssCode = [
     'body.move-search #body { padding-top: 0 !important; }',
     // Расширяемая форма ввода
     'div#threads-bottom-form::after, div#thread-bottom-form::after, div#create-thread-div-form::after { content: "‾‾‾‾‾‾‾‾‾‾‾‾‾"; background-color: #e0eeff; border-bottom: #c6e0ff solid 1px; position: absolute; top: 0; width: 100%; height: 6px; font-size: 8px; text-align: center; cursor: ns-resize; }',
-    'div.form-thread[data-form="send-message"], div.form-thread[data-form="create-thread"], form.form-thread { display:flex; flex-direction: column; height: 100% }',
-    '#threads-form [name="message"], #thread-form [name="message"], .form-thread [name="message"] { height: 100% }',
-    'div.body-tbl { max-height: calc(100% - 200px) }',
-    'div#threads-bottom-form, div#thread-bottom-form, div#create-thread-div-form { min-height: 200px }',
+    'div.form-thread[data-form="send-message"], div.form-thread[data-form="create-thread"], form.form-thread { display:flex; flex-direction: column; height: 100%; }',
+    '#threads-form [name="message"], #thread-form [name="message"], .form-thread [name="message"] { height: 100%; }',
+    'div.body-tbl { max-height: calc(100% - 200px); }',
+    'div#threads-bottom-form, div#thread-bottom-form, div#create-thread-div-form { min-height: 200px; }',
+    // Компактность списка контактов
+    '.list-group .list-group-item { padding-top: 8px !important; padding-bottom: 8px !important; }',
+    // Более крупная точка непрочитанного сообщения
+    '.big-dot { width: 1em; height: 1em; }',
+    // Избранное
+    '.starred { background: #2982cc;  }',
+    '.starred-header { text-align: center; color: #FFF; }',
+    '.starred-footer { height: 6px; margin-left: 7px; border-top: #79bdf5 solid 1px; }',
+    '.list-group .list-group-item .bage .icon-starred { padding: 0; margin: 0; background: transparent; color: #babdbe; }',
+    '.icon-starred:before { content: "\u2606"; }',
+    '.icon-starred:hover:before { content: "\u2605"; }',
+    '.starred .icon-starred:before { content: "\u2605"; }',
+    '.starred .icon-starred:hover:before { content: "\u2606"; }',
+    '.hide { display: none !important }',
 ].join('\n');
 GM_addStyle(cssCode);
 
@@ -197,7 +211,7 @@ if (options['hide-footer']) {
 }
 
 //Развернуть панель BB-кодов
-if($('#panel-bb-codes').length) expandBBCodes();
+if ($('#panel-bb-codes').length) expandBBCodes();
 $(qmsClass).arrive('#panel-bb-codes', expandBBCodes);
 
 function expandBBCodes() {
@@ -254,9 +268,21 @@ $(function() {
         });
     }
 
-    //Изменение размера панели отправки сообщения
+    // Изменение размера панели отправки сообщения
     addBottomFormListener();
     document.addEventListener("mouseup", mouseUp, false);
+
+    // Избранное
+    if ($('div').is('#contacts .list-group')) {
+        addStarredDivs();
+        addStarBadges();
+        addFavs();
+    }
+    $(qmsClass).arrive('#contacts .list-group', () => {
+        addStarredDivs();
+        addStarBadges();
+        addFavs();
+    })
 });
 
 function addBottomFormListener() {
@@ -266,7 +292,7 @@ function addBottomFormListener() {
         '#create-thread-div-form'
     ];
     for (const bottomForm of bottomForms) {
-        if($(bottomForm).length) {
+        if ($(bottomForm).length) {
             $(bottomForm).on("mousedown", mouseDown)
         }
         $(qmsClass).arrive(bottomForm, () => {
@@ -293,4 +319,63 @@ function mouseDown(e) {
 
 function mouseUp() {
     document.removeEventListener("mousemove", resizePanel, false)
+}
+
+function addStarredDivs() {
+    !$('div').is('.starred') && $('#contacts .list-group')
+        .prepend('<div class="starred"><div class="starred-header"><span>Избранное</span></div><div class="starred-footer"></div></div>')
+}
+
+function addStarBadges() {
+    $(qmsClass).find('#contacts .list-group .list-group-item').each((index, item) => {
+        const iconClose = $(item).find('.bage .icon-close');
+        const iconStar = document.createElement('i');
+        iconStar.type = 'button';
+        iconStar.className = 'icon-starred';
+        iconStar.title = 'Добавить в избранное';
+        iconStar.onclick = (event) => {
+            event.preventDefault();
+            onFavorite(item)
+        }
+        iconClose.before(iconStar)
+    })
+}
+
+function onFavorite(item) {
+    const memberId = $(item).attr('data-member-id');
+    let favs = GM_getValue('favs') || [];
+    favs.push(memberId);
+    GM_setValue('favs', [...new Set(favs)]);
+    const newItem = $(item).clone();
+    $(item).addClass('hide');
+    const footer = $('#contacts .list-group .starred-footer');
+    footer.before(newItem);
+    const iconStar = $(newItem).find('.icon-starred')[0];
+    iconStar.onclick = (event) => {
+        event.preventDefault();
+        console.log('unfav');
+        onUnfavorite(item, newItem)
+    }
+}
+
+function onUnfavorite(item, newItem) {
+    const memberId = $(item).attr('data-member-id');
+    let favs = GM_getValue('favs');
+    favs.splice(favs.indexOf(memberId), 1);
+    GM_setValue('favs', favs);
+    $(newItem).remove();
+    $(item).removeClass('hide');
+    const iconStar = $(item).find('.icon-starred')[0];
+    iconStar.onclick = (event) => {
+        event.preventDefault();
+        onFavorite(item)
+    }
+}
+
+function addFavs() {
+    let favs = GM_getValue('favs') || [];
+    favs.forEach(fav => {
+        const item = $(qmsClass + ' [data-member-id="' + fav + '"]');
+        onFavorite(item)
+    })
 }
