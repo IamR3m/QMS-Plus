@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.3
+// @version      0.4.4
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -273,9 +273,16 @@ $(function() {
     document.addEventListener("mouseup", mouseUp, false);
 
     // Избранное
-    addStarredDivs();
-    addStarBadges();
-    addFavs();
+    if ($('div').is('#contacts .list-group')) {
+        addStarredDivs();
+        addStarBadges();
+        addFavs();
+    }
+    $(qmsClass).arrive('#contacts .list-group', () => {
+        addStarredDivs();
+        addStarBadges();
+        addFavs();
+    })
 });
 
 function addBottomFormListener() {
@@ -315,7 +322,7 @@ function mouseUp() {
 }
 
 function addStarredDivs() {
-    $('#contacts .list-group')
+    !$('div').is('.starred') && $('#contacts .list-group')
         .prepend('<div class="starred"><div class="starred-header"><span>Избранное</span></div><div class="starred-footer"></div></div>')
 }
 
