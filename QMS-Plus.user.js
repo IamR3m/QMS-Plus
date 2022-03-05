@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.5
+// @version      0.4.6
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -97,6 +97,7 @@ const cssCode = [
     '.hide { display: none !important }',
     // Предпросмотр сообщений
     '.logo-in-qms #message-preview { position: absolute; bottom: 0; width: -webkit-fill-available; margin: 0 24px 0 12px; padding: 8px; background-color: #e4eaf2; border: #c6e0ff solid 3px; }',
+    '#create-thread-form #message-preview { bottom: 92px; z-index: 15; }',
 ].join('\n');
 GM_addStyle(cssCode);
 
@@ -399,7 +400,8 @@ function showPreviewButton() {
         if ($('div').is(messagePreview)) {
             $(messagePreview).remove()
         } else {
-            $('div.body-tbl').append('<div id="message-preview"></div>');
+            const container = $('div').is('.body-tbl') ? $('div.body-tbl') : $('form#create-thread-form');
+            container.append('<div id="message-preview"></div>');
             $(messagePreview).html(preparePreview())
         }
     });
