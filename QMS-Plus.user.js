@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.4
+// @version      0.4.5
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -95,6 +95,8 @@ const cssCode = [
     '.starred .icon-starred:before { content: "\u2605"; }',
     '.starred .icon-starred:hover:before { content: "\u2606"; }',
     '.hide { display: none !important }',
+    // Предпросмотр сообщений
+    '.logo-in-qms #message-preview { position: absolute; bottom: 0; width: -webkit-fill-available; margin: 0 24px 0 12px; padding: 8px; background-color: #e4eaf2; border: #c6e0ff solid 3px; }',
 ].join('\n');
 GM_addStyle(cssCode);
 
@@ -158,7 +160,8 @@ if (!options) {
         'hide-header': true,
         'hide-footer': true,
         'smooth-disable': true,
-        'move-search': true
+        'move-search': true,
+        'show-preview': true,
     };
     GM_setValue('options', options);
 }
@@ -176,6 +179,7 @@ const settingsHtml = '' +
     optionHtml('hide-footer', 'Скрывать подвал (footer)', options['hide-footer']) +
     optionHtml('smooth-disable', 'Убрать плавную прокрутку', options['smooth-disable']) +
     optionHtml('move-search', 'Вынести поиск в панель', options['move-search']) +
+    optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview']) +
     '</ul>' +
     '</div>';
 const BORDER_SIZE = 6;
@@ -283,6 +287,12 @@ $(function() {
         addStarBadges();
         addFavs();
     })
+
+    // Предпросмотр сообщения
+    if (options['show-preview']) {
+        if ($('#submit-without-attach-file').length) showPreviewButton();
+        $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton)
+    }
 });
 
 function addBottomFormListener() {
@@ -378,4 +388,72 @@ function addFavs() {
         const item = $(qmsClass + ' [data-member-id="' + fav + '"]');
         onFavorite(item)
     })
+}
+
+function showPreviewButton() {
+    const showPreview = '<div class="block" style="margin-top: 8px;"><button id="show-message-preview" class="btn block blue">Предпросмотр</button></div>';
+    $('#submit-without-attach-file').after(showPreview);
+    const messagePreview = '#message-preview';
+    $('#show-message-preview').click((event) => {
+        event.preventDefault();
+        if ($('div').is(messagePreview)) {
+            $(messagePreview).remove()
+        } else {
+            $('div.body-tbl').append('<div id="message-preview"></div>');
+            $(messagePreview).html(preparePreview())
+        }
+    });
+}
+
+function preparePreview() {
+    let message = $('textarea.form-input.block').val();
+
+    return recurseCode(message)
+}
+
+function recurseCode(message) {
+    const regexCode = new RegExp("([\\s\\S]*?)\\[(code|CODE)\\]([\\s\\S]*?)\\[\\/(code|CODE)\\]([\\s\\S]*)", "g");
+    const codeResult = regexCode.exec(message);
+    if (codeResult) {
+        return messageFormatter(codeResult[1]) + formatCode(codeResult[3]) + recurseCode(codeResult[5])
+    } else {
+        return messageFormatter(message)
+    }
+}
+
+function formatCode(message) {
+    return `<div class="post-block code unbox"><div class="block-title"></div><div class="block-body">${message}</div></div>`
+}
+
+function messageFormatter(message) {
+    const regexStyle = new RegExp("\\[(\\/)?([bisu]|sub|sup)\\]", "ig");
+    const regexAlign1 = new RegExp("\\[(left|center|right)\\]", "ig");
+    const regexAlign2 = new RegExp("\\[\\/(left|center|right)\\]", "ig");
+    const regexUrl1 = new RegExp("\\[(url|URL)=\"(.*?)\"]", "g");
+    const regexUrl2 = new RegExp("\\[\\/url\\]", "ig");
+    const regexQuote1 = new RegExp("\\[quote\\]", "ig");
+    const regexBlockEnd = new RegExp("\\[\\/(quote|spoiler)\\]", "ig");
+    const regexOfftop1 = new RegExp("\\[offtop\\]", "ig");
+    const regexOfftop2 = new RegExp("\\[\\/offtop\\]", "ig");
+    const regexSpoil1 = new RegExp("\\[spoiler\\]", "ig");
+    const regexSpoil2 = new RegExp("\\[(spoiler|SPOILER)=(.*?)\\]", "g");
+    const regexListHead = new RegExp("\\[list(=1)?\\]", "ig");
+    const regexListItem = new RegExp("\\[\\*\\]([\\s\\S]*?)(?=\\[(\\/list|\\*)])", "g")
+    const regexListTail = new RegExp("\\[\\/list\\]", "ig");
+
+    return message.replace(/(?:\r\n|\r|\n)/g, '<br/>')
+        .replace(regexStyle, '<$1$2>')
+        .replace(regexAlign1, '<div align="$1">')
+        .replace(regexAlign2, '</div>')
+        .replace(regexUrl1, '<a rel="nofollow" href="$2" target="_blank">')
+        .replace(regexUrl2, '</a>')
+        .replace(regexQuote1, '<div class="post-block quote"><div class="block-title"></div><div class="block-body">')
+        .replace(regexBlockEnd, '</div></div>')
+        .replace(regexOfftop1, '<font style="font-size:9px; color: gray;">')
+        .replace(regexOfftop2, '</font>')
+        .replace(regexSpoil1, '<div class="post-block spoil open"><div class="block-title" title="В предпросмотре спойлер не сворачиваемый"></div><div class="block-body">')
+        .replace(regexSpoil2, '<div class="post-block spoil open"><div class="block-title" title="В предпросмотре спойлер не сворачиваемый">$2</div><div class="block-body">')
+        .replace(regexListHead, '<ul>')
+        .replace(regexListItem, '<li>$1</li>')
+        .replace(regexListTail, '</ul>')
 }
