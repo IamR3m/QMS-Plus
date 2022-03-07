@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.8
+// @version      0.4.9
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -285,22 +285,25 @@ $(function() {
         addStarredDivs();
         addStarBadges();
         addFavs();
+        //выводить дату последнего сообщения рядом с контактом избранного
+        if (options['show-last-message-time']) {
+            contactsDate()
+        }
     }
     $(qmsClass).arrive('#contacts .list-group', () => {
         addStarredDivs();
         addStarBadges();
         addFavs();
+        //выводить дату последнего сообщения рядом с контактом избранного
+        if (options['show-last-message-time']) {
+            contactsDate()
+        }
     })
 
     // Предпросмотр сообщения
     if (options['show-preview']) {
         if ($('#submit-without-attach-file').length) showPreviewButton();
         $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton)
-    }
-
-    //выводить дату последнего сообщения рядом с контактом избранного
-    if (options['show-last-message-time']) {
-        contactsDate()
     }
 });
 
