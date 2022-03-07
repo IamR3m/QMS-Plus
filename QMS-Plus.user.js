@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.6
+// @version      0.4.7
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -431,7 +431,7 @@ function messageFormatter(message) {
     const regexStyle = new RegExp("\\[(\\/)?([bisu]|sub|sup)\\]", "ig");
     const regexAlign1 = new RegExp("\\[(left|center|right)\\]", "ig");
     const regexAlign2 = new RegExp("\\[\\/(left|center|right)\\]", "ig");
-    const regexUrl1 = new RegExp("\\[(url|URL)=\"(.*?)\"]", "g");
+    const regexUrl1 = new RegExp('\\[(url|URL)=(.*?)\\]', "g");
     const regexUrl2 = new RegExp("\\[\\/url\\]", "ig");
     const regexQuote1 = new RegExp("\\[quote\\]", "ig");
     const regexBlockEnd = new RegExp("\\[\\/(quote|spoiler)\\]", "ig");
