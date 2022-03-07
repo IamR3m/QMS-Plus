@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.7
+// @version      0.4.8
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -23,6 +23,7 @@
 // @grant        GM_getResourceText
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // ==/UserScript==
 
@@ -163,6 +164,7 @@ if (!options) {
         'smooth-disable': true,
         'move-search': true,
         'show-preview': true,
+        'show-last-message-time': true
     };
     GM_setValue('options', options);
 }
@@ -181,6 +183,7 @@ const settingsHtml = '' +
     optionHtml('smooth-disable', 'Убрать плавную прокрутку', options['smooth-disable']) +
     optionHtml('move-search', 'Вынести поиск в панель', options['move-search']) +
     optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview']) +
+    optionHtml('show-last-message-time', 'Показывать время последнего сообщения в избранном', options['show-last-message-time']) +
     '</ul>' +
     '</div>';
 const BORDER_SIZE = 6;
@@ -294,6 +297,11 @@ $(function() {
         if ($('#submit-without-attach-file').length) showPreviewButton();
         $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton)
     }
+
+    //выводить дату последнего сообщения рядом с контактом избранного
+    if (options['show-last-message-time']) {
+        contactsDate()
+    }
 });
 
 function addBottomFormListener() {
@@ -364,7 +372,6 @@ function onFavorite(item) {
     const iconStar = $(newItem).find('.icon-starred')[0];
     iconStar.onclick = (event) => {
         event.preventDefault();
-        console.log('unfav');
         onUnfavorite(item, newItem)
     }
 }
@@ -458,4 +465,49 @@ function messageFormatter(message) {
         .replace(regexListHead, '<ul>')
         .replace(regexListItem, '<li>$1</li>')
         .replace(regexListTail, '</ul>')
+}
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
+async function contactsDate() {
+    const contactsList = document.querySelectorAll('#contacts .list-group .starred a.list-group-item');
+    const links = [];
+    const linksLength = contactsList.length;
+    for (let i = 0; i < linksLength; i++) {
+        addContactDate(contactsList[i])
+        await delay(500);
+    }
+}
+
+async function addContactDate(contact) {
+    const contactDate = await getContactDate(contact.href);
+    if (contactDate) {
+        contact.appendChild(document.createElement('br'));
+        const span = document.createElement('i');
+        span.setAttribute('style', 'padding-left: 48px; font-size: 8pt;');
+        span.innerText = contactDate;
+        contact.appendChild(span)
+    }
+}
+
+function getContactDate(link) {
+    return new Promise(resolve => {
+        if (link.endsWith("mid=0")) return resolve();
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', link, true);
+        xhr.onload = function() {
+            if (this.readyState === 4 && this.status === 200) {
+                const response = xhr.responseText;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(response, 'text/html');
+                const text = doc.querySelector('#threads-form a.list-group-item div.bage.fixed.right').innerText;
+                resolve(text)
+            }
+        }
+        xhr.onerror = (e) => {
+            console.error(e)
+            resolve()
+        }
+        xhr.send();
+    })
 }
