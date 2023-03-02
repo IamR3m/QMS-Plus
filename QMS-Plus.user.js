@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.4.9
+// @version      0.5.0
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -87,7 +87,8 @@ const cssCode = [
     // Более крупная точка непрочитанного сообщения
     '.big-dot { width: 1em; height: 1em; }',
     // Избранное
-    '.starred { background: #2982cc;  }',
+    '.starred { background: #2982cc; overflow-y: auto; max-height: 400px; }',
+    '.starred::-webkit-scrollbar { width: 7px; }',
     '.starred-header { text-align: center; color: #FFF; }',
     '.starred-footer { height: 6px; margin-left: 7px; border-top: #79bdf5 solid 1px; }',
     '.list-group .list-group-item .bage .icon-starred { padding: 0; margin: 0; background: transparent; color: #babdbe; }',
@@ -315,10 +316,10 @@ function addBottomFormListener() {
     ];
     for (const bottomForm of bottomForms) {
         if ($(bottomForm).length) {
-            $(bottomForm).on("mousedown", mouseDown)
+            $(bottomForm).on("mousedown", bottomFormMouseDown)
         }
         $(qmsClass).arrive(bottomForm, () => {
-            $(bottomForm).on("mousedown", mouseDown)
+            $(bottomForm).on("mousedown", bottomFormMouseDown)
         });
     }
 }
@@ -332,7 +333,7 @@ function resizePanel(e) {
     bottomForm.height(bottomForm.height() + dy)
 }
 
-function mouseDown(e) {
+function bottomFormMouseDown(e) {
     if (e.offsetY < BORDER_SIZE) {
         m_pos = e.y;
         document.addEventListener("mousemove", resizePanel, false)
@@ -407,7 +408,7 @@ function showPreviewButton() {
     const messagePreview = '#message-preview';
     $('#show-message-preview').click((event) => {
         event.preventDefault();
-        if ($('div').is(messagePreview)) {
+        if($('div').is(messagePreview)) {
             $(messagePreview).remove()
         } else {
             const container = $('div').is('.body-tbl') ? $('div.body-tbl') : $('form#create-thread-form');
