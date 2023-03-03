@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.5.0
+// @version      0.5.1
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -87,10 +87,9 @@ const cssCode = [
     // Более крупная точка непрочитанного сообщения
     '.big-dot { width: 1em; height: 1em; }',
     // Избранное
-    '.starred { background: #2982cc; overflow-y: auto; max-height: 400px; }',
+    '.starred { background: #2982cc; overflow-y: auto; max-height: 270px; border-bottom: #2982cc solid 7px; }',
     '.starred::-webkit-scrollbar { width: 7px; }',
     '.starred-header { text-align: center; color: #FFF; }',
-    '.starred-footer { height: 6px; margin-left: 7px; border-top: #79bdf5 solid 1px; }',
     '.list-group .list-group-item .bage .icon-starred { padding: 0; margin: 0; background: transparent; color: #babdbe; }',
     '.icon-starred:before { content: "\u2606"; }',
     '.icon-starred:hover:before { content: "\u2605"; }',
