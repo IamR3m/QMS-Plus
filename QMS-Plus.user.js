@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.5.1
+// @version      0.6.0
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -91,10 +91,14 @@ const cssCode = [
     '.starred::-webkit-scrollbar { width: 7px; }',
     '.starred-header { text-align: center; color: #FFF; }',
     '.list-group .list-group-item .bage .icon-starred { padding: 0; margin: 0; background: transparent; color: #babdbe; }',
-    '.icon-starred:before { content: "\u2606"; }',
-    '.icon-starred:hover:before { content: "\u2605"; }',
-    '.starred .icon-starred:before { content: "\u2605"; }',
-    '.starred .icon-starred:hover:before { content: "\u2606"; }',
+    'a:hover .icon-starred:before { content: "\u2606"; }',
+    'a:hover .icon-starred:hover:before { content: "\u2605"; }',
+    '.starred a:hover .icon-starred:before { content: "\u2605"; }',
+    '.starred a:hover .icon-starred:hover:before { content: "\u2606"; }',
+    '.starred a:hover .icon-moveup:before { content: "\u25b3"; }',
+    '.starred a:hover .icon-moveup:hover:before { content: "\u25b2"; }',
+    '.starred a:hover .icon-movedown:before { content: "\u25bd"; }',
+    '.starred a:hover .icon-movedown:hover:before { content: "\u25bc"; }',
     '.hide { display: none !important }',
     // Предпросмотр сообщений
     '.logo-in-qms #message-preview { position: absolute; bottom: 0; width: -webkit-fill-available; margin: 0 24px 0 12px; padding: 8px; background-color: #e4eaf2; border: #c6e0ff solid 3px; }',
@@ -351,6 +355,19 @@ function addStarredDivs() {
 function addStarBadges() {
     $(qmsClass).find('#contacts .list-group .list-group-item').each((index, item) => {
         const iconClose = $(item).find('.bage .icon-close');
+
+        const iconUp = document.createElement('i');
+        iconUp.type = 'button';
+        iconUp.className = 'icon-moveup';
+        iconUp.title = 'Поднять выше';
+        iconClose.before(iconUp);
+
+        const iconDown = document.createElement('i');
+        iconDown.type = 'button';
+        iconDown.className = 'icon-movedown';
+        iconDown.title = 'Опустить ниже';
+        iconClose.before(iconDown);
+
         const iconStar = document.createElement('i');
         iconStar.type = 'button';
         iconStar.className = 'icon-starred';
@@ -361,6 +378,35 @@ function addStarBadges() {
         }
         iconClose.before(iconStar)
     })
+}
+
+function insertAndShift(arr, from, to) {
+    let cutOut = arr.splice(from, 1) [0]; // cut the element at index 'from'
+    arr.splice(to, 0, cutOut); // insert it at index 'to'
+}
+
+function moveFavUp(item) {
+    const memberId = $(item).attr('data-member-id');
+    let favs = GM_getValue('favs') || [];
+    const memberIndex = favs.indexOf(memberId);
+    if (memberIndex > 0) {
+        insertAndShift(favs, memberIndex, memberIndex - 1);
+        GM_setValue('favs', favs);
+        const prevMemb = $(item).prevAll()[0];
+        $(prevMemb).before($(item));
+    }
+}
+
+function moveFavDown(item) {
+    const memberId = $(item).attr('data-member-id');
+    let favs = GM_getValue('favs') || [];
+    const memberIndex = favs.indexOf(memberId);
+    if (memberIndex < favs.length) {
+        insertAndShift(favs, memberIndex, memberIndex + 1);
+        GM_setValue('favs', favs);
+        const nextMemb = $(item).nextAll()[0];
+        $(nextMemb).after($(item));
+    }
 }
 
 function onFavorite(item) {
@@ -377,6 +423,16 @@ function onFavorite(item) {
         event.preventDefault();
         onUnfavorite(item, newItem)
     }
+    const iconUp = $(newItem).find('.icon-moveup')[0];
+    iconUp.onclick = (event) => {
+        event.preventDefault();
+        moveFavUp(newItem);
+    };
+    const iconDown = $(newItem).find('.icon-movedown')[0];
+    iconDown.onclick = (event) => {
+        event.preventDefault();
+        moveFavDown(newItem);
+    };
 }
 
 function onUnfavorite(item, newItem) {
