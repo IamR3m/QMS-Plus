@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.6.0
+// @version      0.6.1
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -91,15 +91,15 @@ const cssCode = [
     '.starred::-webkit-scrollbar { width: 7px; }',
     '.starred-header { text-align: center; color: #FFF; }',
     '.list-group .list-group-item .bage .icon-starred { padding: 0; margin: 0; background: transparent; color: #babdbe; }',
-    'a:hover .icon-starred:before { content: "\u2606"; }',
-    'a:hover .icon-starred:hover:before { content: "\u2605"; }',
-    '.starred a:hover .icon-starred:before { content: "\u2605"; }',
-    '.starred a:hover .icon-starred:hover:before { content: "\u2606"; }',
-    '.starred a:hover .icon-moveup:before { content: "\u25b3"; }',
-    '.starred a:hover .icon-moveup:hover:before { content: "\u25b2"; }',
-    '.starred a:hover .icon-movedown:before { content: "\u25bd"; }',
-    '.starred a:hover .icon-movedown:hover:before { content: "\u25bc"; }',
-    '.hide { display: none !important }',
+    'a:hover .icon-starred:before, .always-show-icons .icon-starred:before { content: "\u2606"; }',
+    'a:hover .icon-starred:hover:before, .always-show-icons .icon-starred:hover:before { content: "\u2605"; }',
+    '.starred a:hover .icon-starred:before, .always-show-icons .starred .icon-starred:before { content: "\u2605"; }',
+    '.starred a:hover .icon-starred:hover:before, .always-show-icons .starred .icon-starred:hover:before { content: "\u2606"; }',
+    '.starred a:hover .icon-moveup:before, .always-show-icons .starred .icon-moveup:before { content: "\u25b3"; }',
+    '.starred a:hover .icon-moveup:hover:before, .always-show-icons .starred .icon-moveup:hover:before { content: "\u25b2"; }',
+    '.starred a:hover .icon-movedown:before, .always-show-icons .starred .icon-movedown:before { content: "\u25bd"; }',
+    '.starred a:hover .icon-movedown:hover:before, .always-show-icons .starred .icon-movedown:hover:before { content: "\u25bc"; }',
+    ' { display: none !important }',
     // Предпросмотр сообщений
     '.logo-in-qms #message-preview { position: absolute; bottom: 0; width: -webkit-fill-available; margin: 0 24px 0 12px; padding: 8px; background-color: #e4eaf2; border: #c6e0ff solid 3px; }',
     '#create-thread-form #message-preview { bottom: 92px; z-index: 15; }',
@@ -168,7 +168,8 @@ if (!options) {
         'smooth-disable': true,
         'move-search': true,
         'show-preview': true,
-        'show-last-message-time': true
+        'show-last-message-time': true,
+        'always-show-fav-icons': false,
     };
     GM_setValue('options', options);
 }
@@ -188,6 +189,7 @@ const settingsHtml = '' +
     optionHtml('move-search', 'Вынести поиск в панель', options['move-search']) +
     optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview']) +
     optionHtml('show-last-message-time', 'Показывать время последнего сообщения в избранном', options['show-last-message-time']) +
+    optionHtml('always-show-fav-icons', 'Всегда показывать иконки избранного и сортировки', options['always-show-fav-icons']) +
     '</ul>' +
     '</div>';
 const BORDER_SIZE = 6;
@@ -348,8 +350,11 @@ function mouseUp() {
 }
 
 function addStarredDivs() {
-    !$('div').is('.starred') && $('#contacts .list-group')
-        .prepend('<div class="starred"><div class="starred-header"><span>Избранное</span></div><div class="starred-footer"></div></div>')
+    if(!$('div').is('.starred')) {
+        options['always-show-fav-icons'] && $('#contacts .list-group').addClass('always-show-icons');
+        $('#contacts .list-group')
+            .prepend(`<div class="starred"><div class="starred-header"><span>Избранное</span></div><div class="starred-footer"></div></div>`)
+    }
 }
 
 function addStarBadges() {
