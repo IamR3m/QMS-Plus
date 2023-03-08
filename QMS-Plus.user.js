@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.6.1
+// @version      0.6.2
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -99,7 +99,7 @@ const cssCode = [
     '.starred a:hover .icon-moveup:hover:before, .always-show-icons .starred .icon-moveup:hover:before { content: "\u25b2"; }',
     '.starred a:hover .icon-movedown:before, .always-show-icons .starred .icon-movedown:before { content: "\u25bd"; }',
     '.starred a:hover .icon-movedown:hover:before, .always-show-icons .starred .icon-movedown:hover:before { content: "\u25bc"; }',
-    ' { display: none !important }',
+    '.hide { display: none !important }',
     // Предпросмотр сообщений
     '.logo-in-qms #message-preview { position: absolute; bottom: 0; width: -webkit-fill-available; margin: 0 24px 0 12px; padding: 8px; background-color: #e4eaf2; border: #c6e0ff solid 3px; }',
     '#create-thread-form #message-preview { bottom: 92px; z-index: 15; }',
