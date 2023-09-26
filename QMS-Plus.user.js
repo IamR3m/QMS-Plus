@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.6.2
+// @version      0.7.0
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -103,6 +103,11 @@ const cssCode = [
     // Предпросмотр сообщений
     '.logo-in-qms #message-preview { position: absolute; bottom: 0; width: -webkit-fill-available; margin: 0 24px 0 12px; padding: 8px; background-color: #e4eaf2; border: #c6e0ff solid 3px; }',
     '#create-thread-form #message-preview { bottom: 92px; z-index: 15; }',
+    // Облака сообщений
+    '.list-group .list-group-item[data-message-id]:not(.our-message) { margin: 10px 30px 0 0; border-radius: 0 10px 10px 0; position: relative; background-color: #f0f4f9; }',
+    '.list-group .list-group-item.our-message { margin: 10px 0 0 30px; border-radius: 10px 0 0 10px; position: relative; background-color: #e0eeff; }',
+    '.list-group .list-group-item[data-message-id]:not(.our-message)::before { content: ""; position: absolute; width: 0; height: 0; top: 12px; border-top: 12px solid transparent; border-left: 20px solid #f0f4f9; border-bottom: 8px solid transparent; right: -12px; }',
+    '.list-group .list-group-item.our-message::before { content: ""; position: absolute; width: 0; height: 0; left: -12px; top: 12px; border-top: 12px solid transparent; border-right: 20px solid #e0eeff; border-bottom: 8px solid transparent; }',
 ].join('\n');
 GM_addStyle(cssCode);
 
