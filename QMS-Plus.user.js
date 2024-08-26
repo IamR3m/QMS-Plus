@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.7.0
+// @version      0.7.1
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -401,7 +401,7 @@ function moveFavUp(item) {
     const memberIndex = favs.indexOf(memberId);
     if (memberIndex > 0) {
         insertAndShift(favs, memberIndex, memberIndex - 1);
-        GM_setValue('favs', favs);
+        GM_setValue('favs', favs.filter(Boolean));
         const prevMemb = $(item).prevAll()[0];
         $(prevMemb).before($(item));
     }
@@ -411,9 +411,9 @@ function moveFavDown(item) {
     const memberId = $(item).attr('data-member-id');
     let favs = GM_getValue('favs') || [];
     const memberIndex = favs.indexOf(memberId);
-    if (memberIndex < favs.length) {
+    if (memberIndex > -1 && memberIndex < favs.length) {
         insertAndShift(favs, memberIndex, memberIndex + 1);
-        GM_setValue('favs', favs);
+        GM_setValue('favs', favs.filter(Boolean));
         const nextMemb = $(item).nextAll()[0];
         $(nextMemb).after($(item));
     }
@@ -423,7 +423,7 @@ function onFavorite(item) {
     const memberId = $(item).attr('data-member-id');
     let favs = GM_getValue('favs') || [];
     favs.push(memberId);
-    GM_setValue('favs', [...new Set(favs)]);
+    GM_setValue('favs', [...new Set(favs.filter(Boolean))]);
     const newItem = $(item).clone();
     $(item).addClass('hide');
     const footer = $('#contacts .list-group .starred-footer');
@@ -449,7 +449,7 @@ function onUnfavorite(item, newItem) {
     const memberId = $(item).attr('data-member-id');
     let favs = GM_getValue('favs');
     favs.splice(favs.indexOf(memberId), 1);
-    GM_setValue('favs', favs);
+    GM_setValue('favs', favs.filter(Boolean));
     $(newItem).remove();
     $(item).removeClass('hide');
     const iconStar = $(item).find('.icon-starred')[0];
