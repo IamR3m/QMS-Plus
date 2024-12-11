@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.7.1
+// @version      0.7.2
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -108,6 +108,9 @@ const cssCode = [
     '.list-group .list-group-item.our-message { margin: 10px 0 0 30px; border-radius: 10px 0 0 10px; position: relative; background-color: #e0eeff; }',
     '.list-group .list-group-item[data-message-id]:not(.our-message)::before { content: ""; position: absolute; width: 0; height: 0; top: 12px; border-top: 12px solid transparent; border-left: 20px solid #f0f4f9; border-bottom: 8px solid transparent; right: -12px; }',
     '.list-group .list-group-item.our-message::before { content: ""; position: absolute; width: 0; height: 0; left: -12px; top: 12px; border-top: 12px solid transparent; border-right: 20px solid #e0eeff; border-bottom: 8px solid transparent; }',
+    //Печатает...
+    '#thread-bottom-form:before {left: 1em !important; top: -1.2em; font-size: 12px; content: "Печатает " url("data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjAiIHdpZHRoPSIyNHB4IiBoZWlnaHQ9IjZweCIgdmlld0JveD0iMCAwIDEyOCAzMiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+PGNpcmNsZSBmaWxsPSIjNWM1YzVjIiBjeD0iMCIgY3k9IjAiIHI9IjExIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNiAxNikiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0ic2NhbGUiIGFkZGl0aXZlPSJzdW0iIHZhbHVlcz0iMTsxLjQyOzE7MTsxOzE7MTsxOzE7MSIgZHVyPSI5MDBtcyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiPjwvYW5pbWF0ZVRyYW5zZm9ybT48L2NpcmNsZT48Y2lyY2xlIGZpbGw9IiM1YzVjNWMiIGN4PSIwIiBjeT0iMCIgcj0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDY0IDE2KSI+PGFuaW1hdGVUcmFuc2Zvcm0gYXR0cmlidXRlTmFtZT0idHJhbnNmb3JtIiB0eXBlPSJzY2FsZSIgYWRkaXRpdmU9InN1bSIgdmFsdWVzPSIxOzE7MTsxOzEuNDI7MTsxOzE7MTsxIiBkdXI9IjkwMG1zIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSI+PC9hbmltYXRlVHJhbnNmb3JtPjwvY2lyY2xlPjxjaXJjbGUgZmlsbD0iIzVjNWM1YyIgY3g9IjAiIGN5PSIwIiByPSIxMSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTEyIDE2KSI+PGFuaW1hdGVUcmFuc2Zvcm0gYXR0cmlidXRlTmFtZT0idHJhbnNmb3JtIiB0eXBlPSJzY2FsZSIgYWRkaXRpdmU9InN1bSIgdmFsdWVzPSIxOzE7MTsxOzE7MTsxOzEuNDI7MTsxIiBkdXI9IjkwMG1zIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSI+PC9hbmltYXRlVHJhbnNmb3JtPjwvY2lyY2xlPjwvc3ZnPg==") !important;}',
+    '#scroll-thread .scrollframe-body {margin-bottom: 20px;}'
 ].join('\n');
 GM_addStyle(cssCode);
 
