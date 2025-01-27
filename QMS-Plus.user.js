@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.7.2
+// @version      0.8.0
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -9,10 +9,8 @@
 // @homepage     https://4pda.ru/forum/index.php?showtopic=985927
 // @downloadURL  https://raw.githubusercontent.com/IamR3m/QMS-Plus/master/QMS-Plus.user.js
 // @updateURL    https://raw.githubusercontent.com/IamR3m/QMS-Plus/master/QMS-Plus.meta.js
-// @match        https://4pda.ru/forum/*act=qms*
-// @match        https://4pda.to/forum/*act=qms*
-// @match        http://4pda.ru/forum/*act=qms*
-// @match        http://4pda.to/forum/*act=qms*
+// @match        https://4pda.ru/forum/index.php?act=qms*
+// @match        https://4pda.to/forum/index.php?act=qms*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/arrive/2.4.1/arrive.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js
@@ -23,7 +21,6 @@
 // @grant        GM_getResourceText
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // ==/UserScript==
 
@@ -32,8 +29,8 @@
 /*
  * Стили
  */
-
-const cssCode = [
+function addCustomStyles() {
+  const cssCode = [
     '.body-tbl svg { height: 100%; padding: 1%; }',
     '.header, #contacts, #body, .footer, .navbar, .navbar .nav-left, .navbar .nav, .navbar .nav-right { transition: none; }',
     // Выпадающий список
@@ -111,97 +108,389 @@ const cssCode = [
     //Печатает...
     '#thread-bottom-form:before {left: 1em !important; top: -1.2em; font-size: 12px; content: "Печатает " url("data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjAiIHdpZHRoPSIyNHB4IiBoZWlnaHQ9IjZweCIgdmlld0JveD0iMCAwIDEyOCAzMiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+PGNpcmNsZSBmaWxsPSIjNWM1YzVjIiBjeD0iMCIgY3k9IjAiIHI9IjExIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNiAxNikiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0ic2NhbGUiIGFkZGl0aXZlPSJzdW0iIHZhbHVlcz0iMTsxLjQyOzE7MTsxOzE7MTsxOzE7MSIgZHVyPSI5MDBtcyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiPjwvYW5pbWF0ZVRyYW5zZm9ybT48L2NpcmNsZT48Y2lyY2xlIGZpbGw9IiM1YzVjNWMiIGN4PSIwIiBjeT0iMCIgcj0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDY0IDE2KSI+PGFuaW1hdGVUcmFuc2Zvcm0gYXR0cmlidXRlTmFtZT0idHJhbnNmb3JtIiB0eXBlPSJzY2FsZSIgYWRkaXRpdmU9InN1bSIgdmFsdWVzPSIxOzE7MTsxOzEuNDI7MTsxOzE7MTsxIiBkdXI9IjkwMG1zIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSI+PC9hbmltYXRlVHJhbnNmb3JtPjwvY2lyY2xlPjxjaXJjbGUgZmlsbD0iIzVjNWM1YyIgY3g9IjAiIGN5PSIwIiByPSIxMSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTEyIDE2KSI+PGFuaW1hdGVUcmFuc2Zvcm0gYXR0cmlidXRlTmFtZT0idHJhbnNmb3JtIiB0eXBlPSJzY2FsZSIgYWRkaXRpdmU9InN1bSIgdmFsdWVzPSIxOzE7MTsxOzE7MTsxOzEuNDI7MTsxIiBkdXI9IjkwMG1zIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSI+PC9hbmltYXRlVHJhbnNmb3JtPjwvY2lyY2xlPjwvc3ZnPg==") !important;}',
     '#scroll-thread .scrollframe-body {margin-bottom: 20px;}'
-].join('\n');
-GM_addStyle(cssCode);
+  ];
+  GM_addStyle(cssCode.join('\n'));
+}
+
+/*
+ * Глобальные переменные
+ */
+const options = GM_getValue('options', {
+  'hide-header': true,
+  'hide-footer': true,
+  'smooth-disable': true,
+  'move-search': true,
+  'show-preview': true,
+  'show-last-message-time': true,
+  'always-show-fav-icons': false,
+});
+
+const qmsClass = '.logo-in-qms';
+
+const bgSvg = GM_getResourceText('backgroundSvg');
+const settingsHtml = `
+<div class="dropdown" id="qms-plus">
+    <a href="#" class="btn" title="Настройки QMS Plus" data-toggle="dropdown">
+        <i class="icon-cog"></i>
+        <span class="on-show-sidebar">QMS Plus</span>
+        <i class="icon-down-dir-1"></i>
+    </a>
+    <ul class="dropdown-menu pull-right">
+        ${optionHtml('hide-header', 'Скрывать шапку (header)', options['hide-header'])}
+        ${optionHtml('hide-footer', 'Скрывать подвал (footer)', options['hide-footer'])}
+        ${optionHtml('smooth-disable', 'Убрать плавную прокрутку', options['smooth-disable'])}
+        ${optionHtml('move-search', 'Вынести поиск в панель', options['move-search'])}
+        ${optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview'])}
+        ${optionHtml(
+          'show-last-message-time',
+          'Показывать время последнего сообщения в избранном',
+          options['show-last-message-time'])}
+        ${optionHtml(
+          'always-show-fav-icons',
+          'Всегда показывать иконки избранного и сортировки',
+          options['always-show-fav-icons'])}
+    </ul>
+</div>`;
+const BORDER_SIZE = 6;
+let m_pos;
 
 /*
  * Функции
  */
 
 function optionHtml(name, title, checked) {
-    let result = '<div class="chk-wrap clearfix">' +
-        '<input class="checkbox chk-left" type="checkbox" name="' + name + '" value="1" id="' + name + '"';
-
-    if (checked) {
-        result += ' checked="checked"';
-    }
-
-    result += '><label class="chk-right" for="' + name + '">' + title + '</label></div>';
-    return result;
+  return `
+<div class="chk-wrap clearfix">
+    <input class="checkbox chk-left" type="checkbox" name="${name}" value="1" id="${name}"
+    ${checked ? 'checked="checked"' : ''}>
+    <label class="chk-right" for="${name}">${title}</label>
+</div>`;
 }
 
 function initSettings() {
-    const $settings = $('#qms-plus');
+  const $settings = $('#qms-plus');
 
-    $settings.find('.checkbox').change(function() {
-        options[this.name] = this.checked;
-        GM_setValue('options', options);
-        $settings[0]._tippy.show();
-    });
+  $settings.find('.checkbox').on('change', function () {
+    options[this.name] = this.checked;
+    GM_setValue('options', options);
+    $settings[0]._tippy.show();
+  });
 
-    tippy('#qms-plus', {
-        content: 'Сохранено. Обновите страницу (F5)',
-        trigger: 'manual',
-        distance: 3
-    });
+  tippy('#qms-plus', {
+    content: 'Сохранено. Обновите страницу (F5)',
+    trigger: 'manual',
+    distance: 3
+  });
 }
 
 function removeNiceScroll($selector) {
-    const $scrolls = $selector.getNiceScroll();
+  const $scrolls = $selector.getNiceScroll();
 
-    if ($scrolls.length) {
-        $scrolls.remove();
+  if ($scrolls.length) {
+    $scrolls.remove();
 
-        $scrolls.each(function() {
-            // Крутим вниз, если диалог
-            var element = this.opt.win[0];
-            if (element.id === 'scroll-thread') {
-                setTimeout(function() {
-                    element.scrollTop = element.scrollHeight;
-                }, 100);
-            }
-        });
+    $scrolls.each(function () {
+      // Крутим вниз, если диалог
+      const $element = $(this.opt.win[0]);
+      if ($element.attr('id') === 'scroll-thread') {
+        setTimeout(() => {
+          $element.scrollTop($element[0].scrollHeight);
+        }, 100);
+      }
+    });
+  }
+}
+
+function onFavorite(item) {
+  const $item = $(item);
+  const memberId = $item.attr('data-member-id');
+  let favs = GM_getValue('favs', []);
+  favs.push(memberId);
+  GM_setValue('favs', [...new Set(favs.filter(Boolean))]);
+  const $newItem = $item.clone();
+  $item.addClass('hide');
+  const $footer = $('#contacts .list-group .starred-footer');
+  $footer.before($newItem);
+  $($newItem).find('.icon-starred').on('click', event => {
+    event.preventDefault();
+    onUnfavorite(item, $newItem[0])
+  });
+  $($newItem).find('.icon-moveup').on('click', event => {
+    event.preventDefault();
+    moveFavUp($newItem[0]);
+  });
+  $($newItem).find('.icon-movedown').on('click', event => {
+    event.preventDefault();
+    moveFavDown($newItem[0]);
+  });
+}
+
+function onUnfavorite(item, newItem) {
+  const $item = $(item);
+  const memberId = $item.attr('data-member-id');
+  let favs = GM_getValue('favs');
+  favs.splice(favs.indexOf(memberId), 1);
+  GM_setValue('favs', favs.filter(Boolean));
+  $(newItem).remove();
+  $item.removeClass('hide');
+  $item.find('.icon-starred').on('click', event => {
+    event.preventDefault();
+    onFavorite(item);
+  });
+}
+
+function addFavs() {
+  let favs = GM_getValue('favs', []);
+  favs.forEach(fav => {
+    const $item = $(qmsClass + ' [data-member-id="' + fav + '"]');
+    onFavorite($item[0]);
+  });
+}
+
+function addBottomFormListener() {
+  const bottomForms = [
+    '#threads-bottom-form',
+    '#thread-bottom-form',
+    '#create-thread-div-form'
+  ];
+  bottomForms.forEach(bottomForm => {
+    if ($(bottomForm).length) {
+      $(bottomForm).on("mousedown", bottomFormMouseDown)
     }
+    $(qmsClass).arrive(bottomForm, () => {
+      $(bottomForm).on("mousedown", bottomFormMouseDown)
+    });
+  });
 }
 
-/*
- * Глобальные переменные
- */
-
-let options = GM_getValue('options');
-if (!options) {
-    options = {
-        'hide-header': true,
-        'hide-footer': true,
-        'smooth-disable': true,
-        'move-search': true,
-        'show-preview': true,
-        'show-last-message-time': true,
-        'always-show-fav-icons': false,
-    };
-    GM_setValue('options', options);
+function bottomFormMouseDown(e) {
+  if (e.offsetY < BORDER_SIZE) {
+    m_pos = e.clientY;
+    $(document).on("mousemove", resizePanel);
+  }
 }
 
-const qmsClass = '.logo-in-qms';
+function resizePanel(e) {
+  const dy = m_pos - e.clientY;
+  m_pos = e.clientY;
+  const $threadsList = $('div.body-tbl');
+  $threadsList.height($threadsList.height() - dy);
+  const $bottomForm = $('#threads-bottom-form, #thread-bottom-form, #create-thread-div-form');
+  $bottomForm.height($bottomForm.height() + dy);
+}
 
-const bgSvg = GM_getResourceText('backgroundSvg');
-const settingsHtml = '' +
-    '<div class="dropdown" id="qms-plus">' +
-    '<a href="#" class="btn" title="Настройки QMS Plus" data-toggle="dropdown">' +
-    '<i class="icon-cog"></i><span class="on-show-sidebar">QMS Plus</span><i class="icon-down-dir-1"></i>' +
-    '</a>' +
-    '<ul class="dropdown-menu pull-right">' +
-    optionHtml('hide-header', 'Скрывать шапку (header)', options['hide-header']) +
-    optionHtml('hide-footer', 'Скрывать подвал (footer)', options['hide-footer']) +
-    optionHtml('smooth-disable', 'Убрать плавную прокрутку', options['smooth-disable']) +
-    optionHtml('move-search', 'Вынести поиск в панель', options['move-search']) +
-    optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview']) +
-    optionHtml('show-last-message-time', 'Показывать время последнего сообщения в избранном', options['show-last-message-time']) +
-    optionHtml('always-show-fav-icons', 'Всегда показывать иконки избранного и сортировки', options['always-show-fav-icons']) +
-    '</ul>' +
-    '</div>';
-const BORDER_SIZE = 6;
-let m_pos;
+function mouseUp() {
+  $(document).off("mousemove", resizePanel);
+}
+
+function expandBBCodes() {
+  const panel = $('#panel-bb-codes');
+  if (panel.attr('class') && !panel.attr('class').includes('show')) {
+    $('#btn-bb-codes').click()
+  }
+}
+
+function insertAndShift(arr, from, to) {
+  let cutOut = arr.splice(from, 1)[0]; // cut the element at index 'from'
+  arr.splice(to, 0, cutOut); // insert it at index 'to'
+}
+
+function moveFavUp(item) {
+  const memberId = $(item).attr('data-member-id');
+  let favs = GM_getValue('favs') || [];
+  const memberIndex = favs.indexOf(memberId);
+  if (memberIndex > 0) {
+    insertAndShift(favs, memberIndex, memberIndex - 1);
+    GM_setValue('favs', favs.filter(Boolean));
+    const prevMemb = $(item).prevAll()[0];
+    $(prevMemb).before($(item));
+  }
+}
+
+function moveFavDown(item) {
+  const memberId = $(item).attr('data-member-id');
+  let favs = GM_getValue('favs') || [];
+  const memberIndex = favs.indexOf(memberId);
+  if (memberIndex > -1 && memberIndex < favs.length) {
+    insertAndShift(favs, memberIndex, memberIndex + 1);
+    GM_setValue('favs', favs.filter(Boolean));
+    const nextMemb = $(item).nextAll()[0];
+    $(nextMemb).after($(item));
+  }
+}
+
+function addStarredDivs() {
+  if (!$('.starred').length) {
+    const $contacts = $('#contacts .list-group');
+    if (options['always-show-fav-icons']) $contacts.addClass('always-show-icons');
+    $contacts.prepend(`
+        <div class="starred">
+            <div class="starred-header"><span>Избранное</span></div>
+            <div class="starred-footer"></div>
+        </div>
+    `);
+  }
+}
+
+function addStarBadges() {
+  $('#contacts .list-group .list-group-item').each((index, item) => {
+    const $item = $(item);
+    const $iconClose = $item.find('.bage .icon-close');
+
+    const $iconUp = $('<i>', {
+      type: 'button',
+      class: 'icon-moveup',
+      title: 'Поднять выше'
+    }).insertBefore($iconClose);
+
+    const $iconDown = $('<i>', {
+      type: 'button',
+      class: 'icon-movedown',
+      title: 'Опустить ниже'
+    }).insertBefore($iconClose);
+
+    const $iconStar = $('<i>', {
+      type: 'button',
+      class: 'icon-starred',
+      title: 'Добавить в избранное'
+    }).insertBefore($iconClose);
+
+    $iconStar.on('click', event => {
+      event.preventDefault();
+      onFavorite(item);
+    });
+
+    $iconUp.on('click', event => {
+      event.preventDefault();
+      moveFavUp(item);
+    });
+
+    $iconDown.on('click', event => {
+      event.preventDefault();
+      moveFavDown(item);
+    });
+  });
+}
+
+async function contactsDate() {
+  const $contactsList = $('#contacts .list-group .starred a.list-group-item');
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+  for (const contact of $contactsList) {
+    await addContactDate(contact);
+    await delay(500);
+  }
+}
+
+async function addContactDate(contact) {
+  const contactDate = await getContactDate(contact.href);
+  if (contactDate) {
+    const $contact = $(contact);
+    $contact.append($('<br/>'));
+    const $span = $('<i>').css({
+      paddingLeft: '48px',
+      fontSize: '8pt'
+    }).text(contactDate);
+    $contact.append($span);
+  }
+}
+
+function getContactDate(link) {
+  return new Promise(resolve => {
+    if (link.endsWith("mid=0")) return resolve();
+    $.get(link, response => {
+      const $doc = $(response);
+      const text = $doc.find('#threads-form a.list-group-item div.bage.fixed.right').first().text();
+      resolve(text);
+    }).fail(e => {
+      console.error(e);
+      resolve();
+    });
+  });
+}
+
+function showPreviewButton() {
+  const $showPreview = $(`
+    <div class="block" style="margin-top: 8px;">
+        <button id="show-message-preview" class="btn block blue">Предпросмотр</button>
+    </div>`);
+  $('#submit-without-attach-file').after($showPreview);
+  const messagePreview = '#message-preview';
+  $('#show-message-preview').on('click', event => {
+    event.preventDefault();
+    if ($(messagePreview).length) {
+      $(messagePreview).remove();
+    } else {
+      const $bodyTbl = $('div.body-tbl');
+      const $container = $bodyTbl.length ? $bodyTbl : $('form#create-thread-form');
+      $container.append('<div id="message-preview"></div>');
+      $(messagePreview).html(preparePreview());
+    }
+  });
+}
+
+function preparePreview() {
+  const message = $('textarea.form-input.block').val();
+  return recurseCode(message);
+}
+
+function recurseCode(message) {
+  const regexCode = new RegExp("([\\s\\S]*?)\\[(code|CODE)]([\\s\\S]*?)\\[\\/(code|CODE)]([\\s\\S]*)", "g");
+  const codeResult = regexCode.exec(message);
+  if (codeResult) {
+    return messageFormatter(codeResult[1]) + formatCode(codeResult[3]) + recurseCode(codeResult[5]);
+  } else {
+    return messageFormatter(message);
+  }
+}
+
+function formatCode(message) {
+  return `<div class="post-block code unbox">
+    <div class="block-title"></div>
+    <div class="block-body">${message}</div>
+  </div>`;
+}
+
+function messageFormatter(message) {
+  const regexStyle = new RegExp("\\[(\\/)?([bisu]|sub|sup)]", "ig");
+  const regexAlign1 = new RegExp("\\[(left|center|right)]", "ig");
+  const regexAlign2 = new RegExp("\\[\\/(left|center|right)]", "ig");
+  const regexUrl1 = new RegExp('\\[(url|URL)=(.*?)]', "g");
+  const regexUrl2 = new RegExp("\\[\\/url]", "ig");
+  const regexQuote1 = new RegExp("\\[quote]", "ig");
+  const regexBlockEnd = new RegExp("\\[\\/(quote|spoiler)]", "ig");
+  const regexOfftop1 = new RegExp("\\[offtop]", "ig");
+  const regexOfftop2 = new RegExp("\\[\\/offtop]", "ig");
+  const regexSpoil1 = new RegExp("\\[spoiler]", "ig");
+  const regexSpoil2 = new RegExp("\\[(spoiler|SPOILER)=(.*?)]", "g");
+  const regexListHead = new RegExp("\\[list(=1)?]", "ig");
+  const regexListItem = new RegExp("\\[\\*]([\\s\\S]*?)(?=\\[(\\/list|\\*)])", "g")
+  const regexListTail = new RegExp("\\[\\/list]", "ig");
+
+  // noinspection HtmlUnknownTarget
+  return message.replace(/\r\n|\r|\n/g, '<br/>')
+    .replace(regexStyle, '<$1$2>')
+    .replace(regexAlign1, '<div style="text-align:$1;">')
+    .replace(regexAlign2, '</div>')
+    .replace(regexUrl1, '<a rel="nofollow" href="$2" target="_blank">')
+    .replace(regexUrl2, '</a>')
+    .replace(regexQuote1, '<div class="post-block quote"><div class="block-title"></div><div class="block-body">')
+    .replace(regexBlockEnd, '</div></div>')
+    .replace(regexOfftop1, '<span style="font-size:9px; color: gray;">')
+    .replace(regexOfftop2, '</span>')
+    .replace(
+      regexSpoil1,
+      `<div class="post-block spoil open">
+        <div class="block-title" title="В предпросмотре спойлер не сворачиваемый"></div>
+        <div class="block-body">`)
+    .replace(
+      regexSpoil2,
+      `<div class="post-block spoil open">
+        <div class="block-title" title="В предпросмотре спойлер не сворачиваемый">$2</div>
+        <div class="block-body">`)
+    .replace(regexListHead, '<ul>')
+    .replace(regexListItem, '<li>$1</li>')
+    .replace(regexListTail, '</ul>');
+}
 
 /*
  * До document.ready
@@ -209,377 +498,109 @@ let m_pos;
 
 // Замена SVG-смайлика на свой фон "QMS Plus"
 $(qmsClass).find('.body-tbl svg').replaceWith(bgSvg);
-$(qmsClass).arrive('.body-tbl', function() {
-    $('.body-tbl svg').replaceWith(bgSvg);
+$(qmsClass).arrive('.body-tbl', function () {
+  $('.body-tbl svg').replaceWith(bgSvg);
 });
 
 // Добавление дропдауна "QMS Plus"
 $(qmsClass).find('.nav-right > .dropdown').before(settingsHtml);
-$(qmsClass).arrive('.navbar', function() {
-    if (!$('#qms-plus').length) {
-        $('.nav-right > .dropdown').before(settingsHtml);
-        initSettings();
-    }
+$(qmsClass).arrive('.navbar', function () {
+  if (!$('#qms-plus').length) {
+    $('.nav-right > .dropdown').before(settingsHtml);
+    initSettings();
+  }
 });
 
 // Скрытие шапки
 if (options['hide-header']) {
-    $('body').addClass('hide-header');
+  $('body').addClass('hide-header');
 }
 
 // Скрытие подвала
 if (options['hide-footer']) {
-    $('body').addClass('hide-footer');
+  $('body').addClass('hide-footer');
 }
 
 //Развернуть панель BB-кодов
+// noinspection JSJQueryEfficiency
 if ($('#panel-bb-codes').length) expandBBCodes();
 $(qmsClass).arrive('#panel-bb-codes', expandBBCodes);
-
-function expandBBCodes() {
-    const panel = $('#panel-bb-codes');
-    if (panel.attr('class') && !panel.attr('class').includes('show')) {
-        $('#btn-bb-codes').click()
-    }
-}
 
 /*
  * После document.ready
  */
 
-$(function() {
-    initSettings();
+$(document).ready(async function () {
+  addCustomStyles();
+  initSettings();
 
-    // Доступ к родному jQuery форума
-    const $u = unsafeWindow.$;
+  // Доступ к родному jQuery форума
+  const $u = unsafeWindow.$;
 
-    if (options['smooth-disable']) {
-        $('body').addClass('custom-scroll');
+  if (options['smooth-disable']) {
+    $('body').addClass('custom-scroll');
 
-        // Убираем jQuery.NiceScroll
-        removeNiceScroll($u('[data-scrollframe-init]'));
-        $(qmsClass).arrive('.nicescroll-rails', function() {
-            removeNiceScroll($u(this).parent());
-        });
-
-        // Крутим при новых сообщениях
-        $(qmsClass).arrive('[data-message-id]', _.debounce(function() {
-            this.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 100));
-    }
-
-    // Название кнопки "Отправить"
-    $('#submit-with-attach-file [type="submit"]').val('Отправить (Ctrl+Enter)')
-        .closest('div.block').next().next().remove();
-    $(qmsClass).arrive('#submit-with-attach-file', function() {
-        $(this).find('[type="submit"]').val('Отправить (Ctrl+Enter)')
-            .closest('div.block').next().next().remove();
+    // Убираем jQuery.NiceScroll
+    removeNiceScroll($u('[data-scrollframe-init]'));
+    $(qmsClass).arrive('.nicescroll-rails', function() {
+      removeNiceScroll($u(this).parent());
     });
 
-    // Перенос поиска в панель
-    if (options['move-search']) {
-        const $searchForm = $('#qms-search-form');
-        $('body').addClass('move-search');
+    // Крутим при новых сообщениях
+    $(qmsClass).arrive('[data-message-id]', _.debounce(function() {
+      this.scrollIntoView({behavior: 'smooth', block: 'end'});
+    }, 100));
+  }
 
-        if ($searchForm.length) {
-            $searchForm.prependTo('.navbar > .nav-right');
-        }
+  // Название кнопки "Отправить"
+  $('#submit-with-attach-file [type="submit"]').val('Отправить (Ctrl+Enter)')
+    .closest('div.block').next().next().remove();
+  $(qmsClass).arrive('#submit-with-attach-file', function() {
+    $(this).find('[type="submit"]').val('Отправить (Ctrl+Enter)')
+      .closest('div.block').next().next().remove();
+  });
 
-        $(qmsClass).arrive('#qms-search-form', function() {
-            $(this).prependTo('.navbar > .nav-right');
-        });
+  // Перенос поиска в панель
+  if (options['move-search']) {
+    const $searchForm = $('#qms-search-form');
+    $('body').addClass('move-search');
+
+    if ($searchForm.length) {
+      $searchForm.prependTo('.navbar > .nav-right');
     }
 
-    // Изменение размера панели отправки сообщения
-    addBottomFormListener();
-    document.addEventListener("mouseup", mouseUp, false);
+    $(qmsClass).arrive('#qms-search-form', function() {
+      $(this).prependTo('.navbar > .nav-right');
+    });
+  }
 
-    // Избранное
-    if ($('div').is('#contacts .list-group')) {
-        addStarredDivs();
-        addStarBadges();
-        addFavs();
-        //выводить дату последнего сообщения рядом с контактом избранного
-        if (options['show-last-message-time']) {
-            contactsDate()
-        }
-    }
-    $(qmsClass).arrive('#contacts .list-group', () => {
-        addStarredDivs();
-        addStarBadges();
-        addFavs();
-        //выводить дату последнего сообщения рядом с контактом избранного
-        if (options['show-last-message-time']) {
-            contactsDate()
-        }
-    })
+  // Изменение размера панели отправки сообщения
+  addBottomFormListener();
+  $(document).on("mouseup", mouseUp);
 
-    // Предпросмотр сообщения
-    if (options['show-preview']) {
-        if ($('#submit-without-attach-file').length) showPreviewButton();
-        $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton)
+  // Избранное
+  if ($('#contacts .list-group').length) {
+    addStarredDivs();
+    addStarBadges();
+    addFavs();
+    //выводить дату последнего сообщения рядом с контактом избранного
+    if (options['show-last-message-time']) {
+      await contactsDate();
     }
+  }
+  $(qmsClass).arrive('#contacts .list-group', async () => {
+    addStarredDivs();
+    addStarBadges();
+    addFavs();
+    //выводить дату последнего сообщения рядом с контактом избранного
+    if (options['show-last-message-time']) {
+      await contactsDate();
+    }
+  });
+
+  // Предпросмотр сообщения
+  if (options['show-preview']) {
+    if ($('#submit-without-attach-file').length) showPreviewButton();
+    $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton);
+  }
 });
-
-function addBottomFormListener() {
-    const bottomForms = [
-        '#threads-bottom-form',
-        '#thread-bottom-form',
-        '#create-thread-div-form'
-    ];
-    for (const bottomForm of bottomForms) {
-        if ($(bottomForm).length) {
-            $(bottomForm).on("mousedown", bottomFormMouseDown)
-        }
-        $(qmsClass).arrive(bottomForm, () => {
-            $(bottomForm).on("mousedown", bottomFormMouseDown)
-        });
-    }
-}
-
-function resizePanel(e) {
-    const dy = m_pos - e.y;
-    m_pos = e.y;
-    const threadsList = $('div.body-tbl');
-    threadsList.height(threadsList.height() - dy);
-    const bottomForm = $('#threads-bottom-form, #thread-bottom-form, #create-thread-div-form');
-    bottomForm.height(bottomForm.height() + dy)
-}
-
-function bottomFormMouseDown(e) {
-    if (e.offsetY < BORDER_SIZE) {
-        m_pos = e.y;
-        document.addEventListener("mousemove", resizePanel, false)
-    }
-}
-
-function mouseUp() {
-    document.removeEventListener("mousemove", resizePanel, false)
-}
-
-function addStarredDivs() {
-    if(!$('div').is('.starred')) {
-        options['always-show-fav-icons'] && $('#contacts .list-group').addClass('always-show-icons');
-        $('#contacts .list-group')
-            .prepend(`<div class="starred"><div class="starred-header"><span>Избранное</span></div><div class="starred-footer"></div></div>`)
-    }
-}
-
-function addStarBadges() {
-    $(qmsClass).find('#contacts .list-group .list-group-item').each((index, item) => {
-        const iconClose = $(item).find('.bage .icon-close');
-
-        const iconUp = document.createElement('i');
-        iconUp.type = 'button';
-        iconUp.className = 'icon-moveup';
-        iconUp.title = 'Поднять выше';
-        iconClose.before(iconUp);
-
-        const iconDown = document.createElement('i');
-        iconDown.type = 'button';
-        iconDown.className = 'icon-movedown';
-        iconDown.title = 'Опустить ниже';
-        iconClose.before(iconDown);
-
-        const iconStar = document.createElement('i');
-        iconStar.type = 'button';
-        iconStar.className = 'icon-starred';
-        iconStar.title = 'Добавить в избранное';
-        iconStar.onclick = (event) => {
-            event.preventDefault();
-            onFavorite(item)
-        }
-        iconClose.before(iconStar)
-    })
-}
-
-function insertAndShift(arr, from, to) {
-    let cutOut = arr.splice(from, 1) [0]; // cut the element at index 'from'
-    arr.splice(to, 0, cutOut); // insert it at index 'to'
-}
-
-function moveFavUp(item) {
-    const memberId = $(item).attr('data-member-id');
-    let favs = GM_getValue('favs') || [];
-    const memberIndex = favs.indexOf(memberId);
-    if (memberIndex > 0) {
-        insertAndShift(favs, memberIndex, memberIndex - 1);
-        GM_setValue('favs', favs.filter(Boolean));
-        const prevMemb = $(item).prevAll()[0];
-        $(prevMemb).before($(item));
-    }
-}
-
-function moveFavDown(item) {
-    const memberId = $(item).attr('data-member-id');
-    let favs = GM_getValue('favs') || [];
-    const memberIndex = favs.indexOf(memberId);
-    if (memberIndex > -1 && memberIndex < favs.length) {
-        insertAndShift(favs, memberIndex, memberIndex + 1);
-        GM_setValue('favs', favs.filter(Boolean));
-        const nextMemb = $(item).nextAll()[0];
-        $(nextMemb).after($(item));
-    }
-}
-
-function onFavorite(item) {
-    const memberId = $(item).attr('data-member-id');
-    let favs = GM_getValue('favs') || [];
-    favs.push(memberId);
-    GM_setValue('favs', [...new Set(favs.filter(Boolean))]);
-    const newItem = $(item).clone();
-    $(item).addClass('hide');
-    const footer = $('#contacts .list-group .starred-footer');
-    footer.before(newItem);
-    const iconStar = $(newItem).find('.icon-starred')[0];
-    iconStar.onclick = (event) => {
-        event.preventDefault();
-        onUnfavorite(item, newItem)
-    }
-    const iconUp = $(newItem).find('.icon-moveup')[0];
-    iconUp.onclick = (event) => {
-        event.preventDefault();
-        moveFavUp(newItem);
-    };
-    const iconDown = $(newItem).find('.icon-movedown')[0];
-    iconDown.onclick = (event) => {
-        event.preventDefault();
-        moveFavDown(newItem);
-    };
-}
-
-function onUnfavorite(item, newItem) {
-    const memberId = $(item).attr('data-member-id');
-    let favs = GM_getValue('favs');
-    favs.splice(favs.indexOf(memberId), 1);
-    GM_setValue('favs', favs.filter(Boolean));
-    $(newItem).remove();
-    $(item).removeClass('hide');
-    const iconStar = $(item).find('.icon-starred')[0];
-    iconStar.onclick = (event) => {
-        event.preventDefault();
-        onFavorite(item)
-    }
-}
-
-function addFavs() {
-    let favs = GM_getValue('favs') || [];
-    favs.forEach(fav => {
-        const item = $(qmsClass + ' [data-member-id="' + fav + '"]');
-        onFavorite(item)
-    })
-}
-
-function showPreviewButton() {
-    const showPreview = '<div class="block" style="margin-top: 8px;"><button id="show-message-preview" class="btn block blue">Предпросмотр</button></div>';
-    $('#submit-without-attach-file').after(showPreview);
-    const messagePreview = '#message-preview';
-    $('#show-message-preview').click((event) => {
-        event.preventDefault();
-        if($('div').is(messagePreview)) {
-            $(messagePreview).remove()
-        } else {
-            const container = $('div').is('.body-tbl') ? $('div.body-tbl') : $('form#create-thread-form');
-            container.append('<div id="message-preview"></div>');
-            $(messagePreview).html(preparePreview())
-        }
-    });
-}
-
-function preparePreview() {
-    let message = $('textarea.form-input.block').val();
-
-    return recurseCode(message)
-}
-
-function recurseCode(message) {
-    const regexCode = new RegExp("([\\s\\S]*?)\\[(code|CODE)\\]([\\s\\S]*?)\\[\\/(code|CODE)\\]([\\s\\S]*)", "g");
-    const codeResult = regexCode.exec(message);
-    if (codeResult) {
-        return messageFormatter(codeResult[1]) + formatCode(codeResult[3]) + recurseCode(codeResult[5])
-    } else {
-        return messageFormatter(message)
-    }
-}
-
-function formatCode(message) {
-    return `<div class="post-block code unbox"><div class="block-title"></div><div class="block-body">${message}</div></div>`
-}
-
-function messageFormatter(message) {
-    const regexStyle = new RegExp("\\[(\\/)?([bisu]|sub|sup)\\]", "ig");
-    const regexAlign1 = new RegExp("\\[(left|center|right)\\]", "ig");
-    const regexAlign2 = new RegExp("\\[\\/(left|center|right)\\]", "ig");
-    const regexUrl1 = new RegExp('\\[(url|URL)=(.*?)\\]', "g");
-    const regexUrl2 = new RegExp("\\[\\/url\\]", "ig");
-    const regexQuote1 = new RegExp("\\[quote\\]", "ig");
-    const regexBlockEnd = new RegExp("\\[\\/(quote|spoiler)\\]", "ig");
-    const regexOfftop1 = new RegExp("\\[offtop\\]", "ig");
-    const regexOfftop2 = new RegExp("\\[\\/offtop\\]", "ig");
-    const regexSpoil1 = new RegExp("\\[spoiler\\]", "ig");
-    const regexSpoil2 = new RegExp("\\[(spoiler|SPOILER)=(.*?)\\]", "g");
-    const regexListHead = new RegExp("\\[list(=1)?\\]", "ig");
-    const regexListItem = new RegExp("\\[\\*\\]([\\s\\S]*?)(?=\\[(\\/list|\\*)])", "g")
-    const regexListTail = new RegExp("\\[\\/list\\]", "ig");
-
-    return message.replace(/(?:\r\n|\r|\n)/g, '<br/>')
-        .replace(regexStyle, '<$1$2>')
-        .replace(regexAlign1, '<div align="$1">')
-        .replace(regexAlign2, '</div>')
-        .replace(regexUrl1, '<a rel="nofollow" href="$2" target="_blank">')
-        .replace(regexUrl2, '</a>')
-        .replace(regexQuote1, '<div class="post-block quote"><div class="block-title"></div><div class="block-body">')
-        .replace(regexBlockEnd, '</div></div>')
-        .replace(regexOfftop1, '<font style="font-size:9px; color: gray;">')
-        .replace(regexOfftop2, '</font>')
-        .replace(regexSpoil1, '<div class="post-block spoil open"><div class="block-title" title="В предпросмотре спойлер не сворачиваемый"></div><div class="block-body">')
-        .replace(regexSpoil2, '<div class="post-block spoil open"><div class="block-title" title="В предпросмотре спойлер не сворачиваемый">$2</div><div class="block-body">')
-        .replace(regexListHead, '<ul>')
-        .replace(regexListItem, '<li>$1</li>')
-        .replace(regexListTail, '</ul>')
-}
-
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
-async function contactsDate() {
-    const contactsList = document.querySelectorAll('#contacts .list-group .starred a.list-group-item');
-    const links = [];
-    const linksLength = contactsList.length;
-    for (let i = 0; i < linksLength; i++) {
-        addContactDate(contactsList[i])
-        await delay(500);
-    }
-}
-
-async function addContactDate(contact) {
-    const contactDate = await getContactDate(contact.href);
-    if (contactDate) {
-        contact.appendChild(document.createElement('br'));
-        const span = document.createElement('i');
-        span.setAttribute('style', 'padding-left: 48px; font-size: 8pt;');
-        span.innerText = contactDate;
-        contact.appendChild(span)
-    }
-}
-
-function getContactDate(link) {
-    return new Promise(resolve => {
-        if (link.endsWith("mid=0")) return resolve();
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', link, true);
-        xhr.onload = function() {
-            if (this.readyState === 4 && this.status === 200) {
-                const response = xhr.responseText;
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(response, 'text/html');
-                const text = doc.querySelector('#threads-form a.list-group-item div.bage.fixed.right').innerText;
-                resolve(text)
-            }
-        }
-        xhr.onerror = (e) => {
-            console.error(e)
-            resolve()
-        }
-        xhr.send();
-    })
-}
