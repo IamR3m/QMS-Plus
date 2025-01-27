@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.8.0
+// @version      0.8.1
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -123,6 +123,7 @@ const options = GM_getValue('options', {
   'show-preview': true,
   'show-last-message-time': true,
   'always-show-fav-icons': false,
+  'search-contacts': false
 });
 
 const qmsClass = '.logo-in-qms';
@@ -149,6 +150,10 @@ const settingsHtml = `
           'always-show-fav-icons',
           'Всегда показывать иконки избранного и сортировки',
           options['always-show-fav-icons'])}
+        ${optionHtml(
+          'search-contacts',
+          'Быстрый поиск контакта по имени',
+          options['search-contacts'])}
     </ul>
 </div>`;
 const BORDER_SIZE = 6;
@@ -492,6 +497,47 @@ function messageFormatter(message) {
     .replace(regexListTail, '</ul>');
 }
 
+function addSearchContacts() {
+  $('<div>', {
+    id: "contact-search-container"
+  }).append($('<input>', {
+    type: "text",
+    id: "contact-search-input",
+    class: "form-input block",
+    placeholder: "Поиск контакта..."
+  })).insertBefore("#scroll-contacts");
+
+  GM_addStyle(`
+#contact-search-input {
+  width: 96%;
+  margin: 4px;
+}
+.highlight {
+    background-color: orange;
+    color: blueviolet;
+}
+.hidden {
+    display: none !important;
+}`);
+
+  $('#contact-search-input').on('input', function () {
+    const searchText = $(this).val().toLowerCase();
+    $('#contacts .list-group-item').each(function() {
+      const $item = $(this);
+      const itemText = $item.find('.text-overflow').text().toLowerCase();
+      if (itemText.includes(searchText)) {
+        $item.removeClass('hidden');
+        const regExp = new RegExp('(' + searchText + ')', 'gi');
+        const newHtml = $item.find('.text-overflow').text().replace(regExp, '<span class="highlight">$1</span>');
+        $item.find('.text-overflow')
+          .html('<div class="avatar-wrap">' + $item.find('.avatar-wrap').html() + '</div>' + newHtml);
+      } else {
+        $item.addClass('hidden');
+      }
+    });
+  });
+}
+
 /*
  * До document.ready
  */
@@ -578,6 +624,15 @@ $(document).ready(async function () {
   addBottomFormListener();
   $(document).on("mouseup", mouseUp);
 
+  //Поиск контакта
+  if (options['search-contacts']) addSearchContacts();
+
+  // Предпросмотр сообщения
+  if (options['show-preview']) {
+    if ($('#submit-without-attach-file').length) showPreviewButton();
+    $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton);
+  }
+
   // Избранное
   if ($('#contacts .list-group').length) {
     addStarredDivs();
@@ -597,10 +652,4 @@ $(document).ready(async function () {
       await contactsDate();
     }
   });
-
-  // Предпросмотр сообщения
-  if (options['show-preview']) {
-    if ($('#submit-without-attach-file').length) showPreviewButton();
-    $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton);
-  }
 });
