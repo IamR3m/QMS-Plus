@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.8.1
+// @version      0.8.2
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -625,7 +625,10 @@ $(document).ready(async function () {
   $(document).on("mouseup", mouseUp);
 
   //Поиск контакта
-  if (options['search-contacts']) addSearchContacts();
+  if (options['search-contacts']) {
+    if ($("#scroll-contacts").length) addSearchContacts();
+    $(qmsClass).arrive("#scroll-contacts", addSearchContacts);
+  }
 
   // Предпросмотр сообщения
   if (options['show-preview']) {
