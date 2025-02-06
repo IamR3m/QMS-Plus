@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QMS Plus
 // @namespace    4PDA
-// @version      0.8.2
+// @version      0.9.0
 // @description  Юзерскрипт для добавления/исправления функционала QMS на форуме 4PDA
 // @author       CopyMist, R3m
 // @license      https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ru
@@ -123,39 +123,14 @@ const options = GM_getValue('options', {
   'show-preview': true,
   'show-last-message-time': true,
   'always-show-fav-icons': false,
-  'search-contacts': false
+  'search-contacts': false,
+  'colorize-contacts': false,
+  'show-threads-on-hover': false
 });
 
 const qmsClass = '.logo-in-qms';
 
 const bgSvg = GM_getResourceText('backgroundSvg');
-const settingsHtml = `
-<div class="dropdown" id="qms-plus">
-    <a href="#" class="btn" title="Настройки QMS Plus" data-toggle="dropdown">
-        <i class="icon-cog"></i>
-        <span class="on-show-sidebar">QMS Plus</span>
-        <i class="icon-down-dir-1"></i>
-    </a>
-    <ul class="dropdown-menu pull-right">
-        ${optionHtml('hide-header', 'Скрывать шапку (header)', options['hide-header'])}
-        ${optionHtml('hide-footer', 'Скрывать подвал (footer)', options['hide-footer'])}
-        ${optionHtml('smooth-disable', 'Убрать плавную прокрутку', options['smooth-disable'])}
-        ${optionHtml('move-search', 'Вынести поиск в панель', options['move-search'])}
-        ${optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview'])}
-        ${optionHtml(
-          'show-last-message-time',
-          'Показывать время последнего сообщения в избранном',
-          options['show-last-message-time'])}
-        ${optionHtml(
-          'always-show-fav-icons',
-          'Всегда показывать иконки избранного и сортировки',
-          options['always-show-fav-icons'])}
-        ${optionHtml(
-          'search-contacts',
-          'Быстрый поиск контакта по имени',
-          options['search-contacts'])}
-    </ul>
-</div>`;
 const BORDER_SIZE = 6;
 let m_pos;
 
@@ -163,13 +138,19 @@ let m_pos;
  * Функции
  */
 
-function optionHtml(name, title, checked) {
-  return `
-<div class="chk-wrap clearfix">
-    <input class="checkbox chk-left" type="checkbox" name="${name}" value="1" id="${name}"
-    ${checked ? 'checked="checked"' : ''}>
-    <label class="chk-right" for="${name}">${title}</label>
-</div>`;
+function optionHtml(name, text, checked) {
+  const $chkWrap = $('<div>', {class: 'chk-wrap clearfix'});
+  const $input = $('<input>', {
+    class: 'checkbox chk-left',
+    type: 'checkbox',
+    name,
+    value: '1',
+    id: name,
+    checked
+  });
+  const $label = $('<label>', {class: 'chk-right', for: name, text});
+  $chkWrap.append($input, $label);
+  return $chkWrap[0].outerHTML;
 }
 
 function initSettings() {
@@ -218,7 +199,7 @@ function onFavorite(item) {
   $footer.before($newItem);
   $($newItem).find('.icon-starred').on('click', event => {
     event.preventDefault();
-    onUnfavorite(item, $newItem[0])
+    onUnfavorite(item, $newItem[0]);
   });
   $($newItem).find('.icon-moveup').on('click', event => {
     event.preventDefault();
@@ -259,9 +240,7 @@ function addBottomFormListener() {
     '#create-thread-div-form'
   ];
   bottomForms.forEach(bottomForm => {
-    if ($(bottomForm).length) {
-      $(bottomForm).on("mousedown", bottomFormMouseDown)
-    }
+    if ($(bottomForm).length) $(bottomForm).on("mousedown", bottomFormMouseDown)
     $(qmsClass).arrive(bottomForm, () => {
       $(bottomForm).on("mousedown", bottomFormMouseDown)
     });
@@ -290,9 +269,7 @@ function mouseUp() {
 
 function expandBBCodes() {
   const panel = $('#panel-bb-codes');
-  if (panel.attr('class') && !panel.attr('class').includes('show')) {
-    $('#btn-bb-codes').click()
-  }
+  if (panel.attr('class') && !panel.attr('class').includes('show')) $('#btn-bb-codes').click();
 }
 
 function insertAndShift(arr, from, to) {
@@ -338,7 +315,7 @@ function addStarredDivs() {
 }
 
 function addStarBadges() {
-  $('#contacts .list-group .list-group-item').each((index, item) => {
+  $('#contacts .list-group .list-group-item').each((_, item) => {
     const $item = $(item);
     const $iconClose = $item.find('.bage .icon-close');
 
@@ -377,12 +354,25 @@ function addStarBadges() {
   });
 }
 
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+const getDateBefore = days => (d => new Date(d.setDate(d.getDate() - days)))(new Date);
+
+function rgbaToHex(color) {
+  if (!color?.startsWith("rgb")) return color;
+  const rgbaMatch = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+\.?\d*))?\)$/);
+  if (!rgbaMatch) throw new Error(`Неверный формат цвета: ${color}`);
+  const [_, r, g, b, , a] = rgbaMatch;
+  const toHex = number => parseInt(number).toString(16).padStart(2, '0')
+  const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  if (a) return `${hexColor}${toHex(Math.round(parseFloat(a) * 255))}`;
+  return hexColor;
+}
+
 async function contactsDate() {
   const $contactsList = $('#contacts .list-group .starred a.list-group-item');
-  const delay = ms => new Promise(res => setTimeout(res, ms));
   for (const contact of $contactsList) {
     await addContactDate(contact);
-    await delay(500);
+    await sleep(500);
   }
 }
 
@@ -413,6 +403,40 @@ function getContactDate(link) {
   });
 }
 
+function setContactsColor() {
+  const userColors = GM_getValue('userColors', {});
+  $('#contacts .list-group a.list-group-item').each(function () {
+    const $contact = $(this);
+    const memberId = $contact.attr('data-member-id');
+    if (userColors[memberId]?.color) {
+      const color = userColors[memberId].color;
+      $contact.find('span.text-overflow').css({color});
+    }
+  });
+}
+
+function setContactColor(contactColor) {
+  const $contact = $('#contacts .list-group a.list-group-item.active');
+  const memberId = $contact.attr('data-member-id');
+  const span = $contact.find('span.text-overflow');
+  const color = rgbaToHex(contactColor);
+  const userColors = GM_getValue('userColors', {});
+  if (parseInt(memberId) > 0 &&
+    (
+      !userColors[memberId] ||
+      userColors[memberId].color !== color ||
+      new Date(userColors[memberId].date) < getDateBefore(1)
+    )
+  ) {
+    userColors[memberId] = {
+      color,
+      date: new Date().toJSON()
+    };
+    GM_setValue("userColors", userColors);
+  }
+  if (parseInt(memberId) > 0 && rgbaToHex(span.css("color")) !== color) span.css({color});
+}
+
 function showPreviewButton() {
   const $showPreview = $(`
     <div class="block" style="margin-top: 8px;">
@@ -441,11 +465,9 @@ function preparePreview() {
 function recurseCode(message) {
   const regexCode = new RegExp("([\\s\\S]*?)\\[(code|CODE)]([\\s\\S]*?)\\[\\/(code|CODE)]([\\s\\S]*)", "g");
   const codeResult = regexCode.exec(message);
-  if (codeResult) {
-    return messageFormatter(codeResult[1]) + formatCode(codeResult[3]) + recurseCode(codeResult[5]);
-  } else {
-    return messageFormatter(message);
-  }
+  return codeResult
+    ? messageFormatter(codeResult[1]) + formatCode(codeResult[3]) + recurseCode(codeResult[5])
+    : messageFormatter(message);
 }
 
 function formatCode(message) {
@@ -498,19 +520,38 @@ function messageFormatter(message) {
 }
 
 function addSearchContacts() {
-  $('<div>', {
-    id: "contact-search-container"
-  }).append($('<input>', {
-    type: "text",
-    id: "contact-search-input",
-    class: "form-input block",
-    placeholder: "Поиск контакта..."
-  })).insertBefore("#scroll-contacts");
+  const $contactSearchContainer = $('<div>', {id: "contact-search-container"})
+    .append($('<input>', {
+      type: "text",
+      id: "contact-search-input",
+      class: "form-input block",
+      placeholder: "Поиск контакта..."
+    }))
+    .append($('<i>', {
+      id: 'clear-contact-search-button',
+      type: 'button',
+      class: 'icon-close',
+      style: 'display: none;'
+    }));
+  $("#scroll-contacts").prepend($contactSearchContainer);
+  const $contactSearchInput = $('#contact-search-input');
+  const $clearButton = $('#clear-contact-search-button');
+  $clearButton.on('click', () => $contactSearchInput.val('').trigger('input'));
 
   GM_addStyle(`
+#contact-search-container {
+  position: relative;
+  width: 234px;
+}
 #contact-search-input {
   width: 96%;
   margin: 4px;
+  padding-right: 30px;
+}
+#clear-contact-search-button {
+  position: absolute;
+  right: 10px;
+  top: 31%;
 }
 .highlight {
     background-color: orange;
@@ -520,8 +561,12 @@ function addSearchContacts() {
     display: none !important;
 }`);
 
-  $('#contact-search-input').on('input', function () {
+  $contactSearchInput.on('input', function () {
     const searchText = $(this).val().toLowerCase();
+    if (searchText) {
+      $clearButton.show();
+    } else $clearButton.hide();
+
     $('#contacts .list-group-item').each(function() {
       const $item = $(this);
       const itemText = $item.find('.text-overflow').text().toLowerCase();
@@ -538,19 +583,135 @@ function addSearchContacts() {
   });
 }
 
+function newMessage(element) {
+  const $element = $(element);
+  if (options['colorize-contacts']) setContactColor($element.find('span').css("color"));
+  const href = $('#navbar-title > b > a').attr('href');
+  if (href) $(element).wrap($('<a>', {href, target: "_blank"}));
+}
+
+function showThreadsOnHover() {
+  $(qmsClass).arrive('.threads-list', threads => {
+    const threadsToSave = [];
+    $(threads).find('.list-group-item').each(function () {
+      threadsToSave.push($(this).prop("outerHTML"));
+    });
+    const memberId = $('#contacts .list-group-item.active').attr('data-member-id');
+    const userThreads = GM_getValue('threads', {});
+    userThreads[memberId] = threadsToSave;
+    GM_setValue('threads', userThreads);
+  });
+
+  GM_addStyle(`
+#sticky-threads {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  z-index: 920;
+  transition: visibility 0s 0.5s, opacity 0.5s ease;
+  height: 100%;
+  width: 90%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+#sticky-threads.glow {
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
+  `);
+
+  $(qmsClass).arrive('.thread-list', thread => {
+    const userThreads = GM_getValue('threads', {});
+    const memberId = $('#contacts .list-group-item.active').attr('data-member-id');
+    const threads = userThreads[memberId];
+    if (threads && threads.length > 1) {
+      const $scrollframeBody = $('<div>', {class: 'scrollframe-body'});
+      const $stickyThreads = $('<div>', {
+        id: 'sticky-threads',
+        class: 'list-group',
+      }).append(
+        $('<div>', {
+          class: 'scrollframe',
+          'data-scrollframe-init': 1
+        })
+          .append($scrollframeBody));
+      threads.forEach(item => $scrollframeBody.append(item));
+      $stickyThreads.insertBefore($(thread));
+
+      const $nav = $('#body .navbar .nav');
+      $nav.on('mouseenter', () => $stickyThreads.addClass('glow'));
+
+      function hideThreads() {
+        if (!$nav.is(':hover') && !$stickyThreads.is(':hover')) {
+          $stickyThreads.removeClass('glow');
+        }
+      }
+
+      $stickyThreads.on('mouseleave', () => setTimeout(hideThreads, 100));
+
+      $nav.on('mouseleave', function (event) {
+        const toElement = event.relatedTarget;
+        if (!$stickyThreads.is(':hover') && !$.contains($stickyThreads[0], toElement)) {
+          setTimeout(hideThreads, 100);
+        }
+      });
+    }
+  });
+}
+
+const $settingsDropdown = $('<div>', {class: 'dropdown', id: 'qms-plus'});
+const $settingsLink = $('<a>', {
+  href: '#',
+  class: 'btn',
+  title: 'Настройки QMS Plus',
+  'data-toggle': 'dropdown'
+}).append(
+  $('<i>', {class: 'icon-cog'}),
+  $('<span>', {class: 'on-show-sidebar', text: 'QMS Plus'}),
+  $('<i>', {class: 'icon-down-dir-1'})
+);
+const $settingsMenu = $('<ul>', {class: 'dropdown-menu pull-right'});
+$settingsMenu.append(
+  optionHtml('hide-header', 'Скрывать шапку (header)', options['hide-header']),
+  optionHtml('hide-footer', 'Скрывать подвал (footer)', options['hide-footer']),
+  optionHtml('smooth-disable', 'Убрать плавную прокрутку', options['smooth-disable']),
+  optionHtml('move-search', 'Вынести поиск в панель', options['move-search']),
+  optionHtml('show-preview', 'Кнопка предпросмотра сообщения', options['show-preview']),
+  optionHtml(
+    'show-last-message-time',
+    'Показывать время последнего сообщения в избранном',
+    options['show-last-message-time']
+  ),
+  optionHtml(
+    'always-show-fav-icons',
+    'Всегда показывать иконки избранного и сортировки',
+    options['always-show-fav-icons']
+  ),
+  optionHtml('search-contacts', 'Быстрый поиск контакта по имени', options['search-contacts']),
+  optionHtml('colorize-contacts', 'Красить контакты в цвет группы', options['colorize-contacts']),
+  optionHtml(
+    'show-threads-on-hover',
+    'Показывать список бесед при наведении на хидер из беседы',
+    options['show-threads-on-hover']
+  )
+);
+$settingsDropdown.append($settingsLink, $settingsMenu);
+const settingsHtml = $settingsDropdown[0].outerHTML;
+
 /*
  * До document.ready
  */
 
 // Замена SVG-смайлика на свой фон "QMS Plus"
 $(qmsClass).find('.body-tbl svg').replaceWith(bgSvg);
-$(qmsClass).arrive('.body-tbl', function () {
+$(qmsClass).arrive('.body-tbl', () => {
   $('.body-tbl svg').replaceWith(bgSvg);
 });
 
 // Добавление дропдауна "QMS Plus"
 $(qmsClass).find('.nav-right > .dropdown').before(settingsHtml);
-$(qmsClass).arrive('.navbar', function () {
+$(qmsClass).arrive('.navbar', () => {
   if (!$('#qms-plus').length) {
     $('.nav-right > .dropdown').before(settingsHtml);
     initSettings();
@@ -558,14 +719,10 @@ $(qmsClass).arrive('.navbar', function () {
 });
 
 // Скрытие шапки
-if (options['hide-header']) {
-  $('body').addClass('hide-header');
-}
+if (options['hide-header']) $('body').addClass('hide-header');
 
 // Скрытие подвала
-if (options['hide-footer']) {
-  $('body').addClass('hide-footer');
-}
+if (options['hide-footer']) $('body').addClass('hide-footer');
 
 //Развернуть панель BB-кодов
 // noinspection JSJQueryEfficiency
@@ -636,23 +793,24 @@ $(document).ready(async function () {
     $(qmsClass).arrive('#submit-without-attach-file', showPreviewButton);
   }
 
+  $(qmsClass).arrive('#scroll-thread .list-group-item:not(.our-message) strong', newMessage);
+
+  if (options['show-threads-on-hover']) showThreadsOnHover();
+
   // Избранное
   if ($('#contacts .list-group').length) {
     addStarredDivs();
     addStarBadges();
     addFavs();
+    if (options['colorize-contacts']) setContactsColor();
     //выводить дату последнего сообщения рядом с контактом избранного
-    if (options['show-last-message-time']) {
-      await contactsDate();
-    }
+    if (options['show-last-message-time']) await contactsDate();
   }
   $(qmsClass).arrive('#contacts .list-group', async () => {
     addStarredDivs();
     addStarBadges();
     addFavs();
-    //выводить дату последнего сообщения рядом с контактом избранного
-    if (options['show-last-message-time']) {
-      await contactsDate();
-    }
+    if (options['colorize-contacts']) setContactsColor();
+    if (options['show-last-message-time']) await contactsDate();
   });
 });
